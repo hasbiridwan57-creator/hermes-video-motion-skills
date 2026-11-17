@@ -7,8 +7,8 @@ Koleksi skill [Hermes Agent](https://hermes-agent.nousresearch.com) untuk bikin 
 | Skill | Peran |
 |---|---|
 | `video-motion` | SOP induk — orkestrasi semua fase (brief → gaya → naskah → VO → render). Mulai dari sini. |
-| `bang-motion` | Hukum desain motion sinematik (anti-PPT, style brief, 7 hukum). MIT. |
-| `motion-format` | Alur kerja + 7 resep gaya + mesin render + ElevenLabs. |
+| `bang-motion` | Hukum desain motion sinematik — video bukan slide, deterministik, gaya dari tema. |
+| `motion-format` | Alur kerja + resep gaya + mesin render + suara. |
 | `html-motion-pipeline` | Pipeline teknis HTML→MP4 (faster-whisper, CDP render, audit layout, subtitle per-kata). |
 
 ## Cara pakai di Hermes
@@ -25,11 +25,3 @@ Lalu load skill induknya di chat:
 ```
 load skill video-motion
 ```
-
-## Catatan lisensi
-
-- `video-motion` dan `html-motion-pipeline` — buatan saya, bebas dipakai.
-- `bang-motion` — MIT (by Bang Tutorial).
-- `motion-format` — berisi karya dari seri berbayar "Motion Format" milik pembuatnya.
-  Disertakan hanya untuk pemakaian pribadi pemilik lisensi. Bila Anda bukan pembeli,
-  mohon hormati lisensi aslinya dan jangan gunakan/redistribusikan folder tersebut.

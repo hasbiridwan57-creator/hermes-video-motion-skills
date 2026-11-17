@@ -192,22 +192,9 @@ A cartoon explainer on why volcanoes erupt, for kids, 9:16, I will send a voice-
 
 Bang Motion follows the open **Agent Skills** layout: a folder with `SKILL.md` (frontmatter + instructions), `references/`, `assets/`, `scripts/`. It also ships as a Claude Code **plugin**.
 
-### As a plugin (Claude Code)
-
-```
-/plugin marketplace add bangtutorial/bang-motion
-```
-```
-/plugin install bang-motion@bang-motion
-```
-
-Update later with `/plugin marketplace update bang-motion`.
-
 ### Manual (any agent)
 
-```bash
-git clone https://github.com/bangtutorial/bang-motion
-```
+Salin folder skill ini ke folder skills agent-mu.
 
 | Agent | Where it goes |
 |---|---|
