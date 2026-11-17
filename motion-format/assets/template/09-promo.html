@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>09 · Promo · Paket Template Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+/* ================= UBAH DI SINI =================
+   Promo: judul promo menghentak dari kiri, stempel diskon jatuh, info di bawah. ±5 detik. */
+const CONFIG = {
+  rasio: '16:9',                 // '16:9' (YouTube) atau '9:16' (Reels, TikTok, Shorts)
+  judul: 'FLASH\nSALE',          // judul promo. \n = ganti baris
+  stempel: '50%',                // tulisan besar di stempel
+  stempelKecil: 'OFF',           // tulisan kecil di stempel (kosongkan '' bila tidak mau)
+  info: 'Hari ini saja · kode MOTION',   // pita info di bawah (kosongkan '' bila tidak mau)
+  keluar: true,                  // true = menghilang di akhir, false = berhenti di layar
+  suara: true,                   // false = tanpa efek suara
+  latar: 'bawaan',
+  warna: { latar: '#FFD45C', teks: '#1B2346', aksen: '#FF6B57', aksen2: '#FFF3D6', aksen3: '#8FE3C8', tinta: '#1B2346' },
+  font: { judul: 'Fredoka', isi: 'Nunito' }   // ganti font: ubah juga tautan Google Fonts di atas
+};
+</script>
+<style>
+/* ===== Kit Paket Template Motion: dasar panggung (jangan diubah, ubah CONFIG di atas) ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#05070F}
+/* panggung dipatok ke ukuran video (1920x1080 atau 1080x1920) lalu diskalakan ke jendela.
+   1u = 1% sisi pendek (10,8 px), jadi ukuran elemen sama di 16:9 dan 9:16 */
+#stage{position:fixed;left:50%;top:50%;width:var(--W);height:var(--H);overflow:hidden;--u:calc(var(--S) / 100);
+  background:var(--bg);color:var(--fg);font-family:var(--f-isi);font-weight:700;line-height:1.12;font-size:calc(var(--u) * 4);
+  -webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+#stage em{font-style:normal}
+.jd{font-family:var(--f-judul);font-weight:700;letter-spacing:-.01em;line-height:1}
+.k,.h{display:inline-block}
+.media{overflow:hidden}
+.media>img,.media>video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.mft-latar{position:absolute;inset:0}
+.polos .dekor{display:none!important}
+.pakai-logo>img{width:100%;height:100%;object-fit:contain;display:block}
+/* panel periksa (?debug=1): geser waktu seperti timeline */
+#mft-ui{position:fixed;left:16px;right:16px;bottom:14px;z-index:99;display:none;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;
+  background:rgba(8,12,30,.82);color:#FFF3D6;font:600 13px/1 ui-monospace,Menlo,monospace}
+#mft-ui.on{display:flex}
+#mft-ui input{flex:1;accent-color:#FFD45C}
+
+/* garis miring berjalan; dua kali lebar panggung supaya bisa digeser tanpa terlihat ujungnya */
+.bg{position:absolute;top:-10%;bottom:-10%;left:-60%;right:-60%;
+  background:repeating-linear-gradient(-45deg,transparent 0 calc(var(--u)*7),color-mix(in srgb,var(--bg) 82%,#C97A00) calc(var(--u)*7) calc(var(--u)*14))}
+.wadah{position:absolute;inset:0}
+.jl{position:absolute;left:8%;top:50%;font-size:calc(var(--u)*26);line-height:.92;white-space:nowrap}
+.jl span{display:block;transform-origin:0 50%}
+.st{position:absolute;right:9%;top:50%;width:calc(var(--u)*46);height:calc(var(--u)*46);margin-top:calc(var(--u)*-23);border-radius:50%;background:var(--a1);color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*.6);
+  box-shadow:inset 0 0 0 calc(var(--u)*1.7) rgba(255,255,255,.55),0 calc(var(--u)*2) calc(var(--u)*3.4) rgba(27,35,70,.28)}
+.st b{font-size:calc(var(--u)*17);line-height:.9;white-space:nowrap}
+.st small{font-size:calc(var(--u)*5.6);font-weight:800;letter-spacing:.12em;font-family:var(--f-isi)}
+.gg{position:absolute;inset:calc(var(--u)*-3.2);border-radius:50%;border:calc(var(--u)*.7) dashed var(--ink);opacity:.5}
+.kl{position:absolute;width:calc(var(--u)*6);height:calc(var(--u)*6);background:#fff;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)}
+.kl.k1{right:6%;top:13%}.kl.k2{right:38%;bottom:13%;width:calc(var(--u)*4.4);height:calc(var(--u)*4.4)}.kl.k3{left:44%;top:16%;width:calc(var(--u)*3.6);height:calc(var(--u)*3.6);background:var(--a1)}
+.inf{position:absolute;left:8%;bottom:10%;padding:calc(var(--u)*1.7) calc(var(--u)*3.4);border-radius:calc(var(--u)*5);background:var(--ink);color:var(--a2);font-size:calc(var(--u)*4.2);font-weight:800;white-space:nowrap}
+.port .jl{left:9%;top:25%;font-size:calc(var(--u)*30)}
+.port .st{right:50%;margin-right:calc(var(--u)*-26);top:59%;width:calc(var(--u)*52);height:calc(var(--u)*52);margin-top:calc(var(--u)*-26)}
+.port .st b{font-size:calc(var(--u)*19)}
+.port .inf{left:50%;bottom:11%;font-size:calc(var(--u)*4.6)}
+.port .kl.k1{right:8%;top:38%}.port .kl.k2{right:auto;left:10%;bottom:24%}.port .kl.k3{left:66%;top:11%}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg dekor"></div>
+  <div class="wadah">
+    <i class="kl k1"></i><i class="kl k2"></i><i class="kl k3"></i>
+    <div class="jl jd"></div>
+    <div class="st"><i class="gg"></i><b class="jd"></b><small></small></div>
+    <div class="inf"></div>
+  </div>
+</div>
+<script>
+/* ===== Kit Paket Template Motion (jangan diubah, ubah CONFIG di atas) =====
+   Mengurus: rasio 16:9 / 9:16, warna & font dari CONFIG, latar (bawaan / hijau / warna / gambar / video),
+   logo, teks yang menyesuaikan lebar, efek suara, putar otomatis + ulang, dan window.OPENER untuk
+   scripts/render_mp4.py. Semua gerak ada di SATU timeline GSAP, jadi hasil render selalu sama. */
+var MFT = (function () {
+  var Q = new URLSearchParams(location.search), C = typeof CONFIG !== 'undefined' ? CONFIG : {};
+  var rasio = String(Q.get('rasio') || C.rasio || '16:9').replace(/[x×]/, ':').trim();
+  var port = rasio === '9:16';
+  var W = port ? 1080 : 1920, H = port ? 1920 : 1080, S = Math.min(W, H);
+  var root = document.documentElement, stage = document.getElementById('stage');
+  var w = Object.assign({ latar: '#141E42', teks: '#FFF3D6', aksen: '#FFD45C', aksen2: '#FF6B57', aksen3: '#8FE3C8', tinta: '#1B2346' }, C.warna || {});
+  var f = Object.assign({ judul: 'Fredoka', isi: 'Nunito' }, C.font || {});
+  var css = {
+    '--W': W + 'px', '--H': H + 'px', '--S': S + 'px',
+    '--lg-bg': C.latarLogo || w.teks, '--bg': w.latar, '--fg': w.teks, '--a1': w.aksen, '--a2': w.aksen2, '--a3': w.aksen3, '--ink': w.tinta,
+    '--bg2': w.latarTerang || 'color-mix(in srgb, ' + w.latar + ' 80%, #6F86E8)',
+    '--bg3': w.latarGelap || 'color-mix(in srgb, ' + w.latar + ' 72%, #000)',
+    '--f-judul': '"' + f.judul + '", "Baloo 2", system-ui, sans-serif',
+    '--f-isi': '"' + f.isi + '", "Segoe UI", system-ui, sans-serif'
+  };
+  Object.keys(css).forEach(function (k) { root.style.setProperty(k, css[k]); });
+  stage.classList.add(port ? 'port' : 'land');
+  window.OPENER = { ready: false, W: W, H: H };
+
+  var noop = function () {};
+  function u(n) { return n * S / 100; }
+  function $(s, r) { return (r || stage).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || stage).querySelectorAll(s)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  /* teks dari CONFIG: *kata* = disorot, baris baru = ganti baris */
+  function kaya(s) { return esc(s).replace(/\*([^*]+)\*/g, '<em>$1</em>').replace(/\n/g, '<br>'); }
+  function teks(sel, str) { var el = typeof sel === 'string' ? $(sel) : sel; if (el) el.innerHTML = kaya(str); return el; }
+  /* pecah teks jadi span per 'kata' atau per 'huruf' (kata tetap utuh saat ganti baris) */
+  function pecah(el, mode) {
+    var out = []; if (!el) return out;
+    (function jalan(node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+        if (n.nodeType === 1) { if (n.tagName !== 'BR') jalan(n); return; }
+        if (n.nodeType !== 3) return;
+        var frag = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(function (p) {
+          if (!p) return;
+          if (/^\s+$/.test(p)) { frag.appendChild(document.createTextNode(' ')); return; }
+          var k = document.createElement('span'); k.className = 'k';
+          if (mode === 'huruf') Array.from(p).forEach(function (ch) { var h = document.createElement('span'); h.className = 'h'; h.textContent = ch; k.appendChild(h); out.push(h); });
+          else { k.textContent = p; out.push(k); }
+          frag.appendChild(k);
+        });
+        node.replaceChild(frag, n);
+      });
+    })(el);
+    return out;
+  }
+  /* kecilkan huruf sampai teks muat di lebar/tinggi yang diberi (px panggung), tidak lebih kecil dari `min`. Panggil SEBELUM pecah(). */
+  function muat(el, maxW, maxH, min) {
+    if (!el) return; var fs = parseFloat(getComputedStyle(el).fontSize), n = 0;
+    while (n++ < 48 && fs * .96 >= (min || 0) && ((maxW && el.scrollWidth > maxW + 1) || (maxH && el.scrollHeight > maxH + 1))) { fs *= .96; el.style.fontSize = fs + 'px'; }
+  }
+  /* logo: bila CONFIG.logo diisi, el berisi gambar logo. Mengembalikan true bila gambar dipakai. */
+  function logo(el) { if (!el || !C.logo) return false; el.innerHTML = '<img src="' + esc(C.logo) + '" alt="">'; el.classList.add('pakai-logo'); IMG.push(el.firstChild); return true; }
+  /* gambar atau video sebagai isi el (memenuhi kotak). Video mengikuti jam timeline, termasuk saat render. */
+  var VID = [], IMG = [];
+  function media(el, src, o) {
+    if (!el || !src) return null; o = o || {}; el.classList.add('media');
+    if (/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(src)) {
+      var v = document.createElement('video'); v.src = src; v.muted = true; v.playsInline = true; v.preload = 'auto'; el.appendChild(v);
+      VID.push({ el: v, mulai: o.mulai || 0, dari: o.dari || 0, ulang: !!o.ulang }); return v;
+    }
+    var i = new Image(); i.src = src; i.alt = ''; el.appendChild(i); IMG.push(i); return i;
+  }
+  /* posisi elemen di panggung (px panggung): {x, y, w, h, cx, cy}. Ukur SEBELUM membuat tween. */
+  function kotak(el) { var r = el.getBoundingClientRect(), s = stage.getBoundingClientRect(), z = s.width / W;
+    var o = { x: (r.left - s.left) / z, y: (r.top - s.top) / z, w: r.width / z, h: r.height / z }; o.cx = o.x + o.w / 2; o.cy = o.y + o.h / 2; return o; }
+  function waktuVid(c, t) { var d = c.el.duration, vt = c.dari + Math.max(0, t - c.mulai); if (!d || !isFinite(d)) return vt; return c.ulang ? vt % d : Math.min(vt, d - .04); }
+
+  /* latar: 'bawaan' | 'hijau' (untuk dibuang di aplikasi edit) | '#warna' | 'assets/foto.jpg' | 'assets/klip.mp4' */
+  var L = String(Q.get('latar') || (C.latar == null ? 'bawaan' : C.latar));
+  if (L && L !== 'bawaan') {
+    stage.classList.add('polos');
+    if (L === 'hijau') stage.style.background = '#00FF00';
+    else if (/^(#|rgb|hsl)/i.test(L)) stage.style.background = L;
+    else { var d = document.createElement('div'); d.className = 'mft-latar'; stage.insertBefore(d, stage.firstChild); media(d, L, { ulang: true }); }
+  }
+
+  function paskan() { var s = Math.min(innerWidth / W, innerHeight / H); stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')'; }
+  addEventListener('resize', paskan); paskan();
+
+  function start(o) {
+    var tl = gsap.timeline({ paused: true });
+    var plan = window.AUDIO_PLAN = { vo: [], sfx: [], music: null };
+    var k = {
+      W: W, H: H, port: port, u: u, $: $, $$: $$, teks: teks, pecah: pecah, muat: muat, logo: logo, media: media, kotak: kotak, warna: w, stage: stage, polos: stage.classList.contains('polos'),
+      /* efek suara bawaan paket (folder sfx/): pop, klik, ding, whoosh, swipe, riser, impact, kilau. CONFIG.suara:false = senyap */
+      sfx: function (nama, at, vol) { if (C.suara === false || Q.has('senyap')) return; plan.sfx.push({ at: Math.max(0, at), src: 'sfx/' + nama + '.mp3', vol: vol == null ? .5 : vol }); }
+    };
+    function jalan() {
+      o.build(tl, C, k);
+      var D = Math.max(tl.duration(), +(o.durasi || 0));
+      tl.to({}, { duration: .001 }, D - .001);
+      var seek = function (t) { tl.pause(); tl.time(Math.min(t, D), false); if (gsap.ticker.tick) gsap.ticker.tick(); };
+      var O = window.OPENER; O.tl = tl; O.DURATION = D; O.seek = seek;
+      O.clipsReady = function () { return VID.every(function (c) { return c.el.readyState >= 2; }); };
+      O.seekFrame = function (t) {
+        seek(t);
+        return Promise.all(VID.map(function (c) { return new Promise(function (res) {
+          var v = c.el, vt = waktuVid(c, t); if (Math.abs(v.currentTime - vt) < .001) return res();
+          var to = setTimeout(res, 1500); v.addEventListener('seeked', function h() { v.removeEventListener('seeked', h); clearTimeout(to); res(); }); v.currentTime = vt;
+        }); }));
+      };
+      /* video latar/klip: ikut timeline saat diputar di browser */
+      gsap.ticker.add(function () {
+        if (!VID.length) return; var t = tl.time(), main = !tl.paused();
+        VID.forEach(function (c) { var v = c.el, vt = waktuVid(c, t);
+          if (main && t >= c.mulai) { if (Math.abs(v.currentTime - vt) > .3) v.currentTime = vt; if (v.paused) v.play().catch(noop); }
+          else { if (!v.paused) v.pause(); if (Math.abs(v.currentTime - vt) > .04) v.currentTime = vt; } });
+      });
+      /* suara terikat timeline (sama dengan starter Motion Format): ikut jeda, ulang, dan dibaca render_mp4.py */
+      var MF = (function () {
+        var on = false, last = 0;
+        function mk(s, music) { var a = new Audio(s.src); a.preload = 'auto'; a.volume = s.vol == null ? (music ? .15 : 1) : s.vol; return { at: s.at || 0, el: a, music: !!music }; }
+        var LONG = (plan.vo || []).map(function (s) { return mk(s); }).concat(plan.music ? [mk(plan.music, true)] : []);
+        var SFX = (plan.sfx || []).map(function (s) { return mk(s); }), ALL = LONG.concat(SFX);
+        function unlock() { on = true; }
+        addEventListener('pointerdown', unlock, { once: true }); addEventListener('keydown', unlock, { once: true });
+        gsap.ticker.add(function () {
+          var t = tl.time(), playing = !tl.paused();
+          if (!on) { last = t; return; }
+          for (var i = 0; i < LONG.length; i++) { var c = LONG[i], dd = c.el.duration, rel = t - c.at;
+            var inside = rel >= 0 && (c.music || !dd || !isFinite(dd) || rel < dd);
+            if (playing && inside) { var want = c.music && dd && isFinite(dd) ? rel % dd : rel;
+              if (Math.abs(c.el.currentTime - want) > .25) c.el.currentTime = want;
+              if (c.el.paused) c.el.play().catch(noop); }
+            else if (!c.el.paused) c.el.pause(); }
+          if (playing) { if (t < last) last = -.001;
+            if (t - last < .5) for (var j = 0; j < SFX.length; j++) { var s = SFX[j]; if (s.at > last && s.at <= t) { s.el.currentTime = 0; s.el.play().catch(noop); } } }
+          last = t;
+        });
+        return { has: ALL.length > 0, probe: function () { var a = ALL[0].el, v = a.volume; a.volume = 0;
+          return a.play().then(function () { a.pause(); a.currentTime = 0; a.volume = v; on = true; }, function (e) { a.volume = v; throw e; }); } };
+      })();
+      /* kontrol tersembunyi: Spasi jeda, R ulang. ?debug=1 = panel geser waktu */
+      var ui = document.createElement('div'); ui.id = 'mft-ui'; ui.innerHTML = '<span></span><input type="range" min="0" max="1000" value="0">'; document.body.appendChild(ui);
+      var jam = ui.firstChild, geser = ui.lastChild, pegang = false;
+      if (Q.has('debug')) ui.classList.add('on');
+      gsap.ticker.add(function () { if (!ui.classList.contains('on')) return; var t = tl.time(); jam.textContent = t.toFixed(2) + ' / ' + D.toFixed(1) + ' dtk'; if (!pegang) geser.value = String(t / D * 1000); });
+      geser.addEventListener('pointerdown', function () { pegang = true; tl.pause(); }); addEventListener('pointerup', function () { pegang = false; });
+      geser.addEventListener('input', function () { tl.pause(); tl.time(geser.value / 1000 * D); });
+      addEventListener('keydown', function (e) {
+        if (e.code === 'Space') { e.preventDefault(); if (tl.paused() || tl.progress() >= 1) { if (tl.progress() >= 1) tl.progress(0); tl.play(); } else tl.pause(); }
+        if (/^[rR]$/.test(e.key)) { tl.pause(0); tl.play(); }
+      });
+      tl.eventCallback('onComplete', function () { tl.play(0); });
+      seek(0); O.ready = true;
+      if (Q.has('clean')) return;                                   // render: tidak putar otomatis
+      if (Q.has('t')) { seek(+Q.get('t') || 0); return; }           // ?t=2.5 = berhenti di detik itu (cek tampilan)
+      if (!MF.has) { tl.play(0); return; }
+      MF.probe().then(function () { tl.play(0); }).catch(function () {
+        tl.pause(0); var go = function () { removeEventListener('pointerdown', go); removeEventListener('keydown', go); tl.play(0); };
+        addEventListener('pointerdown', go); addEventListener('keydown', go); });
+    }
+    /* tunggu font dan gambar dulu, supaya ukuran teks yang diukur sudah benar */
+    var tunggu = [document.fonts.load('700 40px "' + f.judul + '"'), document.fonts.load('700 40px "' + f.isi + '"'), document.fonts.load('800 40px "' + f.isi + '"')];
+    var batas = new Promise(function (r) { setTimeout(r, 5000); });
+    Promise.race([Promise.all(tunggu).then(function () { return document.fonts.ready; }), batas]).then(function () {
+      o.siap && o.siap(C, k);                                        // tempat template memasang gambar/logo sebelum diukur
+      return Promise.race([Promise.all(IMG.map(function (i) { return i.decode ? i.decode().catch(noop) : null; })), new Promise(function (r) { setTimeout(r, 4000); })]);
+    }).then(jalan, function (e) { console.error(e); jalan(); }).catch(function (e) { window.MFT_GALAT = String(e && e.stack || e); console.error(e); });
+  }
+  return { start: start, W: W, H: H, port: port };
+})();
+
+</script>
+<script>
+MFT.start({
+  durasi: 5,
+  siap(c, k) {
+    k.$('.jl').innerHTML = String(c.judul || '').split('\n').map(() => '<span></span>').join('');
+    k.$$('.jl span').forEach((s, i) => k.teks(s, String(c.judul).split('\n')[i]));
+    k.teks('.st b', c.stempel); k.teks('.st small', c.stempelKecil); k.teks('.inf', c.info);
+    if (!c.stempelKecil) k.$('.st small').style.display = 'none';
+    if (!c.info) k.$('.inf').style.display = 'none';
+  },
+  build(tl, c, k) {
+    const jl = k.$('.jl'), baris = k.$$('.jl span'), st = k.$('.st');
+    k.muat(jl, k.W * (k.port ? .84 : .5)); k.muat(k.$('.st b'), st.offsetWidth * .74); k.muat(k.$('.inf'), k.W * .84);
+    gsap.set(jl, { yPercent: -50 });
+    if (k.port) gsap.set('.inf', { xPercent: -50 });
+    tl.fromTo('.bg', { x: 0 }, { x: k.u(-28), duration: 5, ease: 'none' }, 0)       // 28u = dua kali lebar pola → geser mulus
+      .from(baris, { x: -k.W, skewX: -18, duration: .55, ease: 'power4.out', stagger: .12 }, .15)
+      .fromTo(st, { scale: 0, rotation: -70 }, { scale: 1, rotation: -12, duration: .5, ease: 'back.out(2.2)' }, .62)
+      // hentakan stempel menggetarkan semuanya sebentar
+      .to('.wadah', { keyframes: [{ x: k.u(1.2), y: k.u(-.6) }, { x: k.u(-1), y: k.u(.5) }, { x: k.u(.6), y: 0 }, { x: 0, y: 0 }], duration: .26, ease: 'none' }, .86)
+      .from('.kl', { scale: 0, rotation: -120, duration: .45, ease: 'back.out(3)', stagger: .1 }, .92)
+      .from('.inf', { y: k.u(8), opacity: 0, duration: .5, ease: 'back.out(1.8)' }, 1.12)
+      .to('.gg', { rotation: 60, duration: 5, ease: 'none' }, 0)
+      .to(st, { scale: 1.07, duration: .42, ease: 'sine.inOut', yoyo: true, repeat: 5 }, 1.5)
+      .to('.kl', { scale: .5, rotation: 45, duration: .5, ease: 'sine.inOut', stagger: { each: .17, yoyo: true, repeat: 3 } }, 1.4);
+    k.sfx('whoosh', .15, .4); k.sfx('impact', .78, .5); k.sfx('kilau', 1.0, .34);
+    if (c.keluar !== false) {
+      tl.to('.inf', { y: k.u(8), opacity: 0, duration: .3, ease: 'power2.in' }, 4.3)
+        .to('.kl', { scale: 0, duration: .25, ease: 'power2.in' }, 4.3)
+        .to(st, { scale: 0, rotation: 40, duration: .36, ease: 'back.in(2)' }, 4.34)
+        .to(baris, { x: -k.W, skewX: 18, duration: .4, ease: 'power3.in', stagger: .06 }, 4.38);
+      k.sfx('swipe', 4.34, .3);
+    }
+  }
+});
+</script>
+</body>
+</html>

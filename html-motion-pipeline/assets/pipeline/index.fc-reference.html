@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Apa itu Function Calling?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+:root{
+  --base:#F4F1EA;
+  --ink:#1E2328;
+  --accent:#12A594;
+  --accent-lit:#5FD3C4;
+  --amber:#F5A524;
+  --muted:#9AA0A6;
+  --card:#FFFFFF;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;
+  font-family:"DM Sans",system-ui,sans-serif;color:var(--ink)}
+#stage{position:fixed;left:50%;top:50%;width:1080px;height:1920px;
+  transform:translate(-50%,-50%) scale(1);overflow:hidden;background:var(--base);
+  background-image:radial-gradient(circle at 1px 1px, rgba(30,35,40,.10) 1.4px, transparent 0);
+  background-size:34px 34px}
+#world{position:absolute;inset:0;will-change:transform}
+#dom{position:absolute;inset:0}
+
+#sub{position:absolute;left:90px;right:90px;bottom:390px;height:140px;
+  pointer-events:none}
+#sub .line{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+  font-family:"DM Sans";font-weight:700;font-size:50px;line-height:1.22;
+  color:var(--ink);opacity:0;text-align:center;text-wrap:balance}
+#sub .line .w{display:inline-block;opacity:.16;margin:0 .12em}
+#sub .line .w.on{opacity:1}
+#sub .line .w.key.on{color:#C57A0B}
+
+#hdr{position:absolute;left:70px;top:70px;display:flex;align-items:center;gap:22px;opacity:0}
+#hdr .av{width:64px;height:64px;border-radius:50%;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:26px;
+  font-family:"Space Grotesk"}
+#hdr .h{font-weight:700;font-size:34px;color:var(--ink)}
+
+.pill{position:absolute;display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+  font-family:"Space Grotesk";font-size:34px;letter-spacing:.06em;text-transform:uppercase;
+  padding:.28em .7em .3em;border-radius:.5em}
+.pill.dark{background:var(--ink)}
+
+.ribbon{position:absolute;font-family:"Space Grotesk";font-weight:700;
+  background:var(--ink);color:#fff;padding:.18em .5em .22em;border-radius:.16em;
+  white-space:nowrap;line-height:1}
+.ribbon.teal{background:var(--accent)}
+.ribbon.amber{background:var(--amber);color:var(--ink)}
+
+.node{position:absolute;z-index:2;background:var(--card);border-radius:36px;
+  box-shadow:0 22px 50px rgba(30,35,40,.14),0 2px 0 rgba(30,35,40,.04);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.node.dark{background:var(--ink);box-shadow:0 26px 60px rgba(30,35,40,.34)}
+/* logo AI agent (mark abstrak: diamond + inti bercahaya + node) */
+/* logo OpenClaw (lobster merah) di kartu agent gelap */
+.agent-ico{width:168px;height:168px;display:block;filter:drop-shadow(0 6px 16px rgba(0,0,0,.35))}
+.agent-ico .body{fill:none;stroke:#fff;stroke-width:9;stroke-linejoin:round}
+.agent-ico .core{fill:#5FD3C4}
+.agent-ico .node{fill:#fff}
+.agent-ico .pulse{fill:none;stroke:var(--accent-lit);stroke-width:5;opacity:.6}
+.node .ico{font-size:84px;line-height:1}
+.toolcard{position:absolute;z-index:2;width:270px;height:260px;background:var(--card);border-radius:30px;
+  box-shadow:0 20px 44px rgba(30,35,40,.16),0 3px 0 rgba(30,35,40,.04);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.toolcard .ico{font-size:74px;line-height:1}
+.toolcard .lbl{font-family:"Space Grotesk";font-weight:700;font-size:32px;color:var(--ink)}
+.node .lbl{font-family:"Space Grotesk";font-weight:700;font-size:34px;color:var(--ink)}
+.node.dark .lbl{color:#fff}
+.node.gray{background:#E7E4DC}
+.node.gray .ico{filter:grayscale(1);opacity:.45}
+.node.gray .lbl{color:var(--muted)}
+
+.wires{position:absolute;inset:0;width:1080px;height:1920px;pointer-events:none;z-index:0}
+.wires path{fill:none;stroke:#7A8188;stroke-width:8;stroke-linecap:round}
+.wires path.gray{stroke:#7A8188;stroke-width:8;stroke-linecap:round}
+.wires path.hot{stroke:var(--amber);stroke-width:15;stroke-linecap:round}
+
+.packet{position:absolute;width:40px;height:40px;border-radius:50%;background:var(--amber);
+  box-shadow:0 0 0 10px rgba(245,165,36,.18);opacity:0}
+
+.proof{position:absolute;background:var(--card);border-radius:22px;padding:44px 48px;
+  box-shadow:0 24px 55px rgba(30,35,40,.16);transform:rotate(-2.2deg)}
+.proof .tape{position:absolute;width:150px;height:44px;background:rgba(245,165,36,.78);
+  transform:rotate(-7deg);border-radius:4px}
+.proof .tape.tl{left:-46px;top:-22px}
+.proof .tape.br{right:-40px;bottom:-20px;transform:rotate(6deg)}
+.proof .tag{display:inline-block;background:var(--amber);color:var(--ink);font-weight:700;
+  font-family:"Space Grotesk";font-size:26px;padding:.22em .6em;border-radius:.4em;letter-spacing:.05em}
+.proof .q{font-family:"DM Sans";font-weight:500;font-size:34px;line-height:1.4;color:var(--ink);margin-top:22px}
+.proof .src{font-size:26px;color:var(--muted);margin-top:20px}
+
+.code{position:absolute;background:var(--ink);border-radius:26px;padding:36px 42px;
+  font-family:"DM Sans";color:#DDE3E8;font-size:36px;line-height:1.6;width:900px}
+.code .k{color:var(--accent-lit)}
+.code .s{color:var(--amber)}
+.code .cm{color:#7A828A}
+
+.ribbon.amber{background:var(--amber)}
+.bigq{position:absolute;font-family:"Space Grotesk";font-weight:700;color:var(--accent);line-height:1}
+
+.vig{position:absolute;inset:0;pointer-events:none;z-index:10;
+  background:radial-gradient(ellipse 82% 72% at 50% 50%,transparent 55%,rgba(30,35,40,.10) 100%)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="world">
+    <div id="dom">
+      <div id="hdr" style="display:none"></div>
+
+      <div class="scene" id="sc1" style="opacity:0;visibility:hidden">
+        <svg class="wires" id="wires1" viewBox="0 0 1080 1920"></svg>
+        <div class="pill dark" id="s1tag" style="left:90px;top:230px">TUTORIAL AGENT</div>
+        <div class="node dark" id="s1agent" style="left:330px;top:540px;width:420px;height:400px">
+          <div class="ico">🤖</div><div class="lbl">AGENT</div>
+        </div>
+        <div class="node gray" id="s1t1" style="left:120px;top:1130px;width:250px;height:220px">
+          <div class="ico">🌤️</div><div class="lbl">cuaca</div>
+        </div>
+        <div class="node gray" id="s1t2" style="left:710px;top:1130px;width:250px;height:220px">
+          <div class="ico">📄</div><div class="lbl">file</div>
+        </div>
+        <div class="node gray" id="s1t3" style="left:415px;top:1400px;width:250px;height:220px">
+          <div class="ico">✉️</div><div class="lbl">email</div>
+        </div>
+      </div>
+
+      <div class="scene" id="sc2" style="opacity:0;visibility:hidden">
+        <svg class="wires" id="wires2" viewBox="0 0 1080 1920"></svg>
+        <div class="bigq" id="s2q" style="font-size:760px;left:430px;top:210px">?</div>
+        <div class="pill" id="s2tag" style="left:90px;top:300px">SOLUSINYA</div>
+        <!-- kartu panel: agent di atas, 3 tool terbang masuk dari bawah -->
+        <div class="node dark" id="s2agent" style="left:360px;top:400px;width:360px;height:320px">
+          <div class="ico">🤖</div><div class="lbl">AGENT</div>
+        </div>
+        <div class="toolcard" id="s2tc1" style="left:90px;top:800px"><div class="ico">🌤️</div><div class="lbl">cuaca</div></div>
+        <div class="toolcard" id="s2tc2" style="left:405px;top:800px"><div class="ico">📄</div><div class="lbl">file</div></div>
+        <div class="toolcard" id="s2tc3" style="left:720px;top:800px"><div class="ico">✉️</div><div class="lbl">email</div></div>
+        <div class="ribbon teal" id="s2ribbon" style="left:80px;top:1120px;font-size:84px">FUNCTION CALLING</div>
+      </div>
+
+      <div class="scene" id="sc3" style="opacity:0;visibility:hidden">
+        <svg class="wires" id="wires3" viewBox="0 0 1080 1920"></svg>
+        <div class="node dark" id="s3agent" style="left:130px;top:600px;width:360px;height:340px">
+          <div class="ico">🤖</div><div class="lbl">AGENT</div>
+        </div>
+        <div class="node" id="s3tool" style="left:600px;top:600px;width:330px;height:340px">
+          <div class="ico">🔧</div><div class="lbl">tool</div>
+        </div>
+        <div class="ribbon amber" id="s3btn" style="left:330px;top:1020px;font-size:54px">🔑 tombol</div>
+      </div>
+
+      <div class="scene" id="sc4" style="opacity:0;visibility:hidden">
+        <div class="proof" id="s4card" style="left:110px;top:440px;width:860px">
+          <div class="tape tl"></div><div class="tape br"></div>
+          <div class="tag">BUKTI</div>
+          <div class="q">Model Context Protocol — didukung lintas penyedia AI besar.</div>
+          <div class="src">modelcontextprotocol.io</div>
+        </div>
+        <div class="node" id="s4o" style="left:110px;top:1130px;width:250px;height:200px">
+          <div class="ico">⬡</div><div class="lbl">OpenAI</div>
+        </div>
+        <div class="node" id="s4a" style="left:415px;top:1130px;width:250px;height:200px">
+          <div class="ico">A\</div><div class="lbl">Anthropic</div>
+        </div>
+        <div class="node" id="s4g" style="left:720px;top:1130px;width:250px;height:200px">
+          <div class="ico">G</div><div class="lbl">Google</div>
+        </div>
+      </div>
+
+      <div class="scene" id="sc5" style="opacity:0;visibility:hidden">
+        <svg class="wires" id="wires5" viewBox="0 0 1080 1920"></svg>
+        <div class="node dark" id="s5agent" style="left:110px;top:520px;width:320px;height:320px">
+          <div class="ico">🤖</div><div class="lbl">AGENT</div>
+        </div>
+        <div class="node" id="s5t1" style="left:660px;top:400px;width:290px;height:230px">
+          <div class="ico">🌤️</div><div class="lbl">cuaca</div>
+        </div>
+        <div class="node gray" id="s5t2" style="left:660px;top:660px;width:290px;height:230px">
+          <div class="ico">📄</div><div class="lbl">file</div>
+        </div>
+        <div class="node gray" id="s5t3" style="left:660px;top:920px;width:290px;height:230px">
+          <div class="ico">✉️</div><div class="lbl">email</div>
+        </div>
+        <div class="packet" id="s5pkt" style="left:430px;top:670px"></div>
+      </div>
+
+      <div class="scene" id="sc6" style="opacity:0;visibility:hidden">
+        <svg class="wires" id="wires6" viewBox="0 0 1080 1920"></svg>
+        <div class="node" id="s6tool" style="left:110px;top:540px;width:350px;height:360px">
+          <div class="ico">🌤️</div><div class="lbl">tool cuaca</div>
+        </div>
+        <div class="node dark" id="s6agent" style="left:620px;top:540px;width:350px;height:360px">
+          <div class="ico">🤖</div><div class="lbl">AGENT</div>
+        </div>
+        <div class="packet" id="s6pkt" style="left:460px;top:690px"></div>
+        <div class="ribbon amber" id="s6res" style="left:280px;top:1010px;font-size:56px">✓ hasil balik</div>
+      </div>
+
+      <div class="scene" id="sc7" style="opacity:0;visibility:hidden">
+        <svg class="wires" id="wires7" viewBox="0 0 1080 1920"></svg>
+        <div class="code" id="s7code" style="left:80px;top:470px">
+          <div><span class="cm"># tanya</span></div>
+          <div>“Cuaca Jakarta?”</div>
+          <div style="margin-top:22px"><span class="k">→ panggil</span> <span class="s">get_weather</span></div>
+          <div style="margin-top:8px"><span class="k">→ ambil</span> data</div>
+          <div style="margin-top:8px"><span class="k">→ jawab</span> “Jakarta 31°C”</div>
+        </div>
+        <div class="node dark" id="s7agent" style="left:110px;top:1100px;width:230px;height:230px">
+          <div class="ico">🤖</div>
+        </div>
+        <div class="node" id="s7tool" style="left:740px;top:1100px;width:230px;height:230px">
+          <div class="ico">🌤️</div>
+        </div>
+        <div class="packet" id="s7pkt" style="left:350px;top:1180px"></div>
+      </div>
+
+      <div class="scene" id="sc8" style="opacity:0;visibility:hidden">
+        <svg class="wires" id="wires8" viewBox="0 0 1080 1920"></svg>
+        <div class="node dark" id="s8agent" style="left:360px;top:460px;width:360px;height:340px">
+          <div class="ico">🤖</div><div class="lbl">AGENT</div>
+        </div>
+        <div class="node" id="s8t1" style="left:100px;top:880px;width:240px;height:210px">
+          <div class="ico">🌤️</div>
+        </div>
+        <div class="node" id="s8t2" style="left:420px;top:920px;width:240px;height:210px">
+          <div class="ico">📄</div>
+        </div>
+        <div class="node" id="s8t3" style="left:740px;top:880px;width:240px;height:210px">
+          <div class="ico">✉️</div>
+        </div>
+        <div class="ribbon teal" id="s8ribbon" style="left:110px;top:1250px;font-size:64px">BISA NGELAKUIN</div>
+        <div class="ribbon" id="s8ribbon2" style="left:330px;top:1340px;font-size:64px">SESUATU</div>
+      </div>
+
+      <div id="sub"></div>
+      <div class="vig"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORDS = [{"w": "Agent", "s": 0.0, "e": 0.42}, {"w": "lu", "s": 0.42, "e": 0.62}, {"w": "pinter,", "s": 0.62, "e": 1.16}, {"w": "tapi", "s": 1.7, "e": 2.36}, {"w": "coba", "s": 2.36, "e": 2.88}, {"w": "tanya", "s": 2.88, "e": 3.1}, {"w": "cuaca.", "s": 3.1, "e": 3.48}, {"w": "Dia", "s": 4.42, "e": 4.94}, {"w": "nggak", "s": 4.94, "e": 5.1}, {"w": "bisa", "s": 5.1, "e": 5.26}, {"w": "ngapain", "s": 5.26, "e": 5.56}, {"w": "-ngapain,", "s": 5.56, "e": 6.04}, {"w": "cuma", "s": 6.58, "e": 6.96}, {"w": "bisa", "s": 6.96, "e": 7.16}, {"w": "ngomong.", "s": 7.16, "e": 7.8}, {"w": "Solusinya,", "s": 9.4, "e": 10.12}, {"w": "Function", "s": 10.86, "e": 11.32}, {"w": "Calling.", "s": 11.32, "e": 11.74}, {"w": "Gampangnya,", "s": 12.5, "e": 13.22}, {"w": "itu", "s": 13.44, "e": 13.58}, {"w": "cara", "s": 13.58, "e": 13.84}, {"w": "buat", "s": 13.84, "e": 14.1}, {"w": "AI", "s": 14.1, "e": 14.4}, {"w": "bisa", "s": 14.4, "e": 14.8}, {"w": "manggil", "s": 14.8, "e": 15.16}, {"w": "tool", "s": 15.16, "e": 15.48}, {"w": "lu.", "s": 15.48, "e": 15.7}, {"w": "Kayak", "s": 16.24, "e": 16.6}, {"w": "ngasih", "s": 16.6, "e": 16.84}, {"w": "dia", "s": 16.84, "e": 16.98}, {"w": "tombol.", "s": 16.98, "e": 17.38}, {"w": "Ini", "s": 18.1, "e": 18.32}, {"w": "bukan", "s": 18.32, "e": 18.58}, {"w": "trik!", "s": 18.58, "e": 19.12}, {"w": "Open", "s": 19.42, "e": 19.62}, {"w": "AI,", "s": 19.62, "e": 19.92}, {"w": "Anthropic,", "s": 20.32, "e": 20.68}, {"w": "Google,", "s": 21.1, "e": 21.34}, {"w": "semua", "s": 21.7, "e": 22.06}, {"w": "dukung.", "s": 22.06, "e": 22.44}, {"w": "Alurnya,", "s": 23.16, "e": 23.8}, {"w": "Agent", "s": 24.48, "e": 24.84}, {"w": "milih", "s": 24.84, "e": 25.16}, {"w": "tool", "s": 25.16, "e": 25.32}, {"w": "yang", "s": 25.32, "e": 25.48}, {"w": "pas,", "s": 25.48, "e": 25.74}, {"w": "terus", "s": 26.24, "e": 26.28}, {"w": "kirim", "s": 26.28, "e": 26.72}, {"w": "argument", "s": 26.72, "e": 27.08}, {"w": "yang", "s": 27.08, "e": 27.32}, {"w": "dia", "s": 27.32, "e": 27.44}, {"w": "butuhin.", "s": 27.44, "e": 27.94}, {"w": "Terus", "s": 27.94, "e": 28.96}, {"w": "toolnya", "s": 28.96, "e": 29.28}, {"w": "jalan,", "s": 29.28, "e": 29.72}, {"w": "hasilnya", "s": 30.02, "e": 30.48}, {"w": "balik", "s": 30.48, "e": 30.86}, {"w": "lagi", "s": 30.86, "e": 31.12}, {"w": "ke", "s": 31.12, "e": 31.28}, {"w": "Agent", "s": 31.28, "e": 31.56}, {"w": "buat", "s": 31.56, "e": 31.82}, {"w": "dijawab.", "s": 31.82, "e": 32.34}, {"w": "Misal,", "s": 32.78, "e": 33.38}, {"w": "lu", "s": 33.5, "e": 33.56}, {"w": "tanya", "s": 33.56, "e": 33.8}, {"w": "cuaca", "s": 33.8, "e": 34.12}, {"w": "Jakarta.", "s": 34.12, "e": 34.66}, {"w": "Dia", "s": 35.34, "e": 35.58}, {"w": "panggil", "s": 35.58, "e": 35.9}, {"w": "tool", "s": 35.9, "e": 36.12}, {"w": "cuaca,", "s": 36.12, "e": 36.6}, {"w": "ambil", "s": 36.94, "e": 37.26}, {"w": "datanya,", "s": 37.26, "e": 37.72}, {"w": "terus", "s": 38.0, "e": 38.2}, {"w": "jawab.", "s": 38.2, "e": 38.66}, {"w": "Jadi", "s": 39.14, "e": 39.46}, {"w": "Function", "s": 39.46, "e": 39.84}, {"w": "Calling", "s": 39.84, "e": 40.1}, {"w": "itu", "s": 40.1, "e": 40.46}, {"w": "yang", "s": 40.46, "e": 40.68}, {"w": "bikin", "s": 40.68, "e": 40.98}, {"w": "Agent", "s": 40.98, "e": 41.28}, {"w": "bisa", "s": 41.28, "e": 41.52}, {"w": "beneran", "s": 41.52, "e": 42.1}, {"w": "ngelakuin", "s": 42.1, "e": 42.46}, {"w": "sesuatu.", "s": 42.46, "e": 42.98}];
+const DURATION = 44.6;
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+const scenes=$$('.scene');
+const NS='http://www.w3.org/2000/svg';
+
+/* logo AI agent — mark abstrak (diamond outline + inti bercahaya + 4 node satelit).
+   Dipasang otomatis ke semua .node.dark yang berisi emoji robot. */
+/* logo AI agent — lobster OpenClaw (inline, tanpa animasi SMIL agar deterministik) */
+const OPENCLAW_SVG=`<svg class="agent-ico" viewBox="0 0 120 120" aria-label="OpenClaw AI Agent">
+  <defs><linearGradient id="ocg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d4d"/><stop offset="1" stop-color="#991b1b"/></linearGradient></defs>
+  <path d="M60 10 C30 10 15 35 15 55 C15 75 30 95 45 100 L45 110 L55 110 L55 100 C55 100 60 102 65 100 L65 110 L75 110 L75 100 C90 95 105 75 105 55 C105 35 90 10 60 10Z" fill="url(#ocg)"/>
+  <path d="M20 45 C5 40 0 50 5 60 C10 70 20 65 25 55 C28 48 25 45 20 45Z" fill="url(#ocg)"/>
+  <path d="M100 45 C115 40 120 50 115 60 C110 70 100 65 95 55 C92 48 95 45 100 45Z" fill="url(#ocg)"/>
+  <path d="M45 15 Q35 5 30 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M75 15 Q85 5 90 8" stroke="#ff4d4d" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="45" cy="35" r="6" fill="#050810"/>
+  <circle cx="75" cy="35" r="6" fill="#050810"/>
+  <circle cx="46" cy="34" r="2.5" fill="#00e5cc"/>
+  <circle cx="76" cy="34" r="2.5" fill="#00e5cc"/>
+</svg>`;
+function agentLogo(size){return OPENCLAW_SVG;}
+$$('.node.dark').forEach(n=>{
+  const ico=n.querySelector('.ico');
+  if(ico && ico.textContent.includes('🤖')) ico.outerHTML=agentLogo(140);
+});
+
+/* subtitle: kelompokkan kata jadi chunk pendek — batas kalimat (gap besar) ATAU maks 4 kata */
+const LINES=(()=>{const L=[];let cur=[];
+  WORDS.forEach((w,i)=>{cur.push(w);
+    const gap=i<WORDS.length-1?WORDS[i+1].s-w.e:1;
+    if(cur.length>=4||(gap>0.30&&cur.length>=2)){L.push(cur);cur=[];}
+  });if(cur.length)L.push(cur);return L;})();
+const KEY=/^(Function|Calling|OpenAI|Anthropic|Google|tombol|cuaca|ngelakuin|nggak|cuma|bukan|Solusinya|tool)$/i;
+const subEl=$('#sub');
+const lineEls=LINES.map(L=>{
+  const d=document.createElement('div');d.className='line';
+  L.forEach(w=>{const s=document.createElement('span');s.className='w'+(KEY.test(w.w)?' key':'');
+    s.textContent=w.w+' ';d.appendChild(s);});
+  subEl.appendChild(d);return {el:d,ws:Array.from(d.querySelectorAll('.w')),words:L};
+});
+
+function wire(svg,from,to,{cls=''}={}){
+  const p=document.createElementNS(NS,'path');
+  // garis hampir lurus, lengkung halus 8% (tidak menggantung)
+  const sx=from.x+(to.x-from.x)*0.5, sy=from.y+(to.y-from.y)*0.5;
+  const nx=-(to.y-from.y), ny=(to.x-from.x);
+  const len=Math.hypot(nx,ny)||1;
+  const bow=Math.min(26, len*0.08);
+  p.setAttribute('d',`M${from.x},${from.y} Q${sx+(nx/len)*bow},${sy+(ny/len)*bow} ${to.x},${to.y}`);
+  if(cls)p.setAttribute('class',cls);
+  svg.appendChild(p);
+  const len2=p.getTotalLength();
+  p.style.strokeDasharray=len2;p.style.strokeDashoffset=len2;
+  return p;
+}
+function center(id){const e=$(id);return {x:e.offsetLeft+e.offsetWidth/2,y:e.offsetTop+e.offsetHeight/2};}
+/* titik di TEPI node menghadap ke target — garis keluar dari tepi, tak menembus kartu */
+function edge(id,to){
+ const e=$(id);const b={x:e.offsetLeft,y:e.offsetTop,w:e.offsetWidth,h:e.offsetHeight};
+ const c={x:b.x+b.w/2,y:b.y+b.h/2};const dx=to.x-c.x,dy=to.y-c.y;
+ const tx=Math.abs(dx)>1e-6?(b.w/2)/Math.abs(dx):Infinity;
+ const ty=Math.abs(dy)>1e-6?(b.h/2)/Math.abs(dy):Infinity;
+ const t=Math.min(tx,ty);
+ return {x:c.x+dx*t,y:c.y+dy*t};
+}
+/* endpoint di tepi node target, dari sisi sumber */
+function edgeT(id,from){
+ const e=$(id);const b={x:e.offsetLeft,y:e.offsetTop,w:e.offsetWidth,h:e.offsetHeight};
+ const c={x:b.x+b.w/2,y:b.y+b.h/2};const dx=from.x-c.x,dy=from.y-c.y;
+ const tx=Math.abs(dx)>1e-6?(b.w/2)/Math.abs(dx):Infinity;
+ const ty=Math.abs(dy)>1e-6?(b.h/2)/Math.abs(dy):Infinity;
+ const t=Math.min(tx,ty);
+ return {x:c.x+dx*t,y:c.y+dy*t};
+}
+
+/* garis antar 2 node dengan anchor di TEPI masing-masing (tak menembus kartu) */
+function link(svg,idA,idB,opts){
+  const ca=center(idA), cb=center(idB);
+  return wire(svg,edge(idA,cb),edgeT(idB,ca),opts);
+}
+function show(id,at){tl.set('#'+id,{autoAlpha:1},at);}
+function hide(id,at){tl.set('#'+id,{autoAlpha:0},at);}
+
+const tl=gsap.timeline({paused:true});
+const rig=$('#world');
+window.__tl=tl; window.__rig=rig;
+
+/* ADEGAN 1 — HOOK 0→4.4 */
+show('sc1',0);
+tl.fromTo('#hdr',{opacity:0,y:-20},{opacity:1,y:0,duration:.6,ease:'power3.out'},0);
+tl.fromTo('#s1tag',{opacity:0,scale:.7},{opacity:1,scale:1,duration:.5,ease:'back.out(2)'},0.05);
+tl.fromTo('#s1agent',{opacity:0,scale:.6},{opacity:1,scale:1,duration:.6,ease:'back.out(1.6)'},0.15);
+tl.fromTo('#s1t1',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},0.7);
+tl.fromTo('#s1t2',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},0.82);
+tl.fromTo('#s1t3',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},0.94);
+{const w=$('#wires1');
+ const gs=[link(w,'#s1agent','#s1t1',{cls:'gray'}),link(w,'#s1agent','#s1t2',{cls:'gray'}),link(w,'#s1agent','#s1t3',{cls:'gray'})];
+ gs.forEach(p=>tl.to(p,{strokeDashoffset:0,duration:.5,ease:'power2.out'},1.0));}
+tl.to(rig,{scale:1.04,duration:4.3,ease:'sine.inOut'},0);
+hide('sc1',4.35);
+
+/* ADEGAN 2 — SOLUSI 4.4→12.5 */
+show('sc2',4.4);
+tl.set('#s2ribbon',{autoAlpha:0,clipPath:'inset(0% 100% 0% 0%)'},0);
+tl.fromTo('#s2q',{opacity:0,scale:.3},{opacity:.12,scale:1,duration:1.2,ease:'expo.out'},4.45);
+tl.fromTo('#s2tag',{opacity:0,x:-40},{opacity:1,x:0,duration:.5,ease:'power3.out'},4.6);
+tl.fromTo('#s2agent',{opacity:0,scale:.6,y:-30},{opacity:1,scale:1,y:0,duration:.6,ease:'back.out(1.6)'},4.8);
+/* 3 kartu tool terbang masuk dari bawah (stagger) */
+tl.fromTo('#s2tc1',{opacity:0,y:160,rotation:-6},{opacity:1,y:0,rotation:-3,duration:.55,ease:'back.out(1.4)'},5.6);
+tl.fromTo('#s2tc2',{opacity:0,y:160,rotation:4},{opacity:1,y:0,rotation:2,duration:.55,ease:'back.out(1.4)'},5.85);
+tl.fromTo('#s2tc3',{opacity:0,y:160,rotation:-3},{opacity:1,y:0,rotation:3,duration:.55,ease:'back.out(1.4)'},6.1);
+/* garis agent→tool draw-on */
+{const w=$('#wires2');
+ [['#s2tc1',6.6],['#s2tc2',6.75],['#s2tc3',6.9]].forEach(([id,at])=>{
+   const p=link(w,'#s2agent',id,{cls:'gray'});tl.to(p,{strokeDashoffset:0,duration:.5,ease:'power2.out'},at);});}
+/* pita FUNCTION CALLING menyapu keluar dari kiri */
+tl.set('#s2ribbon',{autoAlpha:1,clipPath:'inset(0% 100% 0% 0%)'},9.3);
+tl.to('#s2ribbon',{clipPath:'inset(0% 0% 0% 0%)',duration:1.1,ease:'power3.inOut'},9.3);
+tl.fromTo('#s2agent',{scale:1},{scale:1.06,duration:.3,ease:'power2.out',yoyo:true,repeat:1},10.2);
+tl.to(rig,{scale:1.0,duration:8.1,ease:'sine.inOut'},4.4);
+hide('sc2',12.45);
+
+/* ADEGAN 3 — DEFINISI 12.5→18.1 (kata "tombol" 16.24) */
+show('sc3',12.5);
+tl.fromTo('#s3agent',{opacity:0,x:-60},{opacity:1,x:0,duration:.55,ease:'power3.out'},12.6);
+tl.fromTo('#s3tool',{opacity:0,x:60},{opacity:1,x:0,duration:.55,ease:'power3.out'},12.8);
+{const p=link($('#wires3'),'#s3agent','#s3tool');
+ tl.to(p,{strokeDashoffset:0,duration:.7,ease:'power2.inOut'},13.6);}
+tl.fromTo('#s3btn',{opacity:0,scale:.5},{opacity:1,scale:1,duration:.5,ease:'back.out(2)'},16.24);
+tl.to(rig,{scale:1.03,duration:5.6,ease:'sine.inOut'},12.5);
+hide('sc3',18.05);
+
+/* ADEGAN 4 — KREDIBILITAS 18.1→23.1 */
+show('sc4',18.1);
+tl.fromTo('#s4card',{opacity:0,y:60,rotate:-6},{opacity:1,y:0,rotate:-2.2,duration:.7,ease:'back.out(1.4)'},18.2);
+tl.fromTo('#s4o',{opacity:0,y:40},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},19.5);
+tl.fromTo('#s4a',{opacity:0,y:40},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},19.9);
+tl.fromTo('#s4g',{opacity:0,y:40},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},20.3);
+tl.to(rig,{scale:1.05,duration:5.0,ease:'sine.inOut'},18.1);
+hide('sc4',23.05);
+
+/* ADEGAN 5 — ALUR 23.1→27.94 */
+show('sc5',23.1);
+tl.fromTo('#s5agent',{opacity:0,x:-50},{opacity:1,x:0,duration:.5,ease:'power3.out'},23.2);
+tl.fromTo('#s5t1',{opacity:0,x:50},{opacity:1,x:0,duration:.4,ease:'power3.out'},23.5);
+tl.fromTo('#s5t2',{opacity:0,x:50},{opacity:1,x:0,duration:.4,ease:'power3.out'},23.62);
+tl.fromTo('#s5t3',{opacity:0,x:50},{opacity:1,x:0,duration:.4,ease:'power3.out'},23.74);
+{const w=$('#wires5');
+ const g1=link(w,'#s5agent','#s5t2',{cls:'gray'});
+ const g2=link(w,'#s5agent','#s5t3',{cls:'gray'});
+ tl.to(g1,{strokeDashoffset:0,duration:.4},23.9);
+ tl.to(g2,{strokeDashoffset:0,duration:.4},24.0);
+ const hot=link(w,'#s5agent','#s5t1',{cls:'hot'});
+ tl.to(hot,{strokeDashoffset:0,duration:.5,ease:'power2.out'},25.4);}
+tl.fromTo('#s5pkt',{opacity:0},{opacity:1,duration:.2},26.6);
+tl.fromTo('#s5pkt',{x:0,y:0},{x:220,y:-140,duration:.7,ease:'power2.inOut'},26.6);
+tl.to('#s5pkt',{opacity:0,duration:.2},27.3);
+tl.to(rig,{scale:1.06,duration:4.8,ease:'sine.inOut'},23.1);
+hide('sc5',27.9);
+
+/* ADEGAN 6 — MOMEN ISTIMEWA 27.94→32.7 */
+show('sc6',27.94);
+tl.fromTo('#s6tool',{opacity:0,x:-50},{opacity:1,x:0,duration:.45,ease:'power3.out'},28.0);
+tl.fromTo('#s6agent',{opacity:0,x:50},{opacity:1,x:0,duration:.45,ease:'power3.out'},28.15);
+{const p=link($('#wires6'),'#s6tool','#s6agent',{cls:'hot'});
+ tl.to(p,{strokeDashoffset:0,duration:.5,ease:'power2.inOut'},29.9);}
+tl.fromTo('#s6pkt',{opacity:0},{opacity:1,duration:.15},29.85);
+tl.fromTo('#s6pkt',{x:0,y:0},{x:210,y:0,duration:.6,ease:'power2.inOut'},29.85);
+tl.to('#s6pkt',{opacity:0,duration:.15},30.45);
+tl.fromTo('#s6res',{opacity:0,y:30,scale:.8},{opacity:1,y:0,scale:1,duration:.55,ease:'back.out(2)'},30.6);
+tl.to('#s6agent',{scale:1.07,duration:.35,ease:'power2.out',yoyo:true,repeat:1},30.0);
+tl.to(rig,{scale:1.08,duration:4.7,ease:'sine.inOut'},27.94);
+hide('sc6',32.7);
+
+/* ADEGAN 7 — CONTOH 32.7→39.0 */
+show('sc7',32.7);
+tl.fromTo('#s7code',{opacity:0,y:40},{opacity:1,y:0,duration:.6,ease:'power3.out'},32.85);
+tl.fromTo('#s7agent',{opacity:0,y:30},{opacity:1,y:0,duration:.4,ease:'back.out(1.8)'},35.4);
+tl.fromTo('#s7tool',{opacity:0,y:30},{opacity:1,y:0,duration:.4,ease:'back.out(1.8)'},35.6);
+{const p=link($('#wires7'),'#s7agent','#s7tool',{cls:'hot'});
+ tl.to(p,{strokeDashoffset:0,duration:.5,ease:'power2.out'},36.6);}
+tl.fromTo('#s7pkt',{opacity:0},{opacity:1,duration:.15},36.5);
+tl.fromTo('#s7pkt',{x:0,y:0},{x:420,y:35,duration:.7,ease:'power2.inOut'},36.5);
+tl.to('#s7pkt',{opacity:0,duration:.15},37.2);
+tl.to(rig,{scale:1.03,duration:6.3,ease:'sine.inOut'},32.7);
+hide('sc7',38.95);
+
+/* ADEGAN 8 — PENUTUP 39.0→43.6 */
+show('sc8',39.0);
+tl.fromTo('#s8agent',{opacity:0,scale:.6},{opacity:1,scale:1,duration:.6,ease:'back.out(1.6)'},39.2);
+tl.fromTo('#s8t1',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},39.5);
+tl.fromTo('#s8t2',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},39.65);
+tl.fromTo('#s8t3',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'back.out(1.8)'},39.8);
+{const w=$('#wires8');
+ [['#s8t1',40.1],['#s8t2',40.25],['#s8t3',40.4]].forEach(([id,at])=>{
+   const p=link(w,'#s8agent',id);tl.to(p,{strokeDashoffset:0,duration:.5,ease:'power2.out'},at);});}
+tl.fromTo('#s8ribbon',{opacity:0,x:-40},{opacity:1,x:0,duration:.5,ease:'power3.out'},41.2);
+tl.fromTo('#s8ribbon2',{opacity:0,x:-40},{opacity:1,x:0,duration:.5,ease:'power3.out'},41.6);
+tl.to(rig,{scale:1.0,duration:4.6,ease:'sine.inOut'},39.0);
+
+/* SUBTITLE per kata */
+const flat=[];lineEls.forEach((L,li)=>L.words.forEach((w,wi)=>flat.push({...w,li,wi})));
+function updateSub(t){
+  let active=-1;
+  flat.forEach(f=>{const on=t>=f.s&&t<=f.e+0.2;lineEls[f.li].ws[f.wi].classList.toggle('on',on);if(on)active=f.li;});
+  if(active<0){
+    for(let i=0;i<lineEls.length;i++){const st=lineEls[i].words[0].s;if(st<=t)active=i;}
+  }
+  lineEls.forEach((L,li)=>{L.el.style.opacity=(li===active)?1:0;});
+}
+window.__updateSub=updateSub;
+
+/* AUDIO + LOOP + scrub */
+const audio=new Audio('public/full_mix.mp3');
+let playing=false;
+function playAll(){audio.currentTime=0;tl.time(0);audio.play().catch(()=>{});tl.play();}
+audio.addEventListener('ended',()=>{playAll();});
+function tick(){if(playing)updateSub(tl.time());requestAnimationFrame(tick);}
+requestAnimationFrame(tick);
+
+const Q=new URLSearchParams(location.search);
+if(Q.has('t')){
+  // mode potret statis: lompat ke detik t, jeda (untuk snapshot headless)
+  const t=parseFloat(Q.get('t'))||0;
+  playing=false;
+  audio.muted=true;
+  tl.time(t);tl.pause();updateSub(t);
+}else if(Q.has('debug')){
+  const bar=document.createElement('div');
+  bar.style.cssText='position:fixed;bottom:0;left:0;right:0;height:64px;background:#111;display:flex;align-items:center;gap:14px;padding:0 16px;z-index:99';
+  bar.innerHTML='<button id="pp" style="width:80px;height:40px;font-size:20px">▶</button><input id="sc" type="range" min="0" max="'+DURATION+'" step="0.05" value="0" style="flex:1"><span id="tc" style="color:#fff;font:16px monospace;width:70px">0.00</span>';
+  document.body.appendChild(bar);
+  const sc=bar.querySelector('#sc'),tc=bar.querySelector('#tc');
+  sc.addEventListener('input',e=>{const t=+e.target.value;tl.time(t);updateSub(t);tc.textContent=t.toFixed(2);});
+  bar.querySelector('#pp').addEventListener('click',()=>{playing=!playing;if(playing){tl.play();audio.play().catch(()=>{});}else{tl.pause();audio.pause();}});
+  (function l(){tc.textContent=tl.time().toFixed(2);if(document.activeElement!==sc)sc.value=tl.time();requestAnimationFrame(l);})();
+  playing=true;tl.play();
+}else{
+  const start=()=>{if(!playing){playing=true;playAll();window.removeEventListener('click',start);window.removeEventListener('keydown',start);}};
+  window.addEventListener('click',start);window.addEventListener('keydown',start);
+  playing=true;playAll();
+}
+</script>
+</body>
+</html>
