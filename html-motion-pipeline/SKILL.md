@@ -10,7 +10,7 @@ description: >-
 license: internal
 metadata:
   author: Hermes (Hasbi workflow)
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # HTML Motion Pipeline (9:16 explainer, VO + SFX → MP4)
@@ -26,6 +26,20 @@ Function Calling — salin lalu ganti kontennya, jangan tulis dari nol).
   wajib lulus sebelum render penuh (menghemat render 1338 frame).
 - **Garis penghubung rapi**: anchor di tepi node, di lapisan belakang (lihat
   Pitfall #1).
+
+## Prinsip utama (ini intinya)
+**Visual melayani naskah & VO, bukan sebaliknya.**
+1. Semua yang tampil di layar **wajib ada di naskah & diucapkan VO**. Elemen yang menarik
+   tapi tak dinarasikan → buang, sebagus apapun.
+2. Sebaliknya, tiap ide/kalimat penting di naskah **wajib punya gambar sendiri** yang muncul
+   saat frasa itu diucapkan. Kalimat yang cuma jadi teks diam = adegan "sepi" → tambah visual.
+3. **Banyak adegan tidak masalah** — yang penting tiap adegan mengikuti VO & naskah.
+4. **Lebih banyak gambar & animasi = lebih baik** (lebih hidup). Jangan pelit menambah visual;
+   kekayaan visual itu nilai tambah, bukan kelemahan.
+5. Urutan & timing visual = **urutan & timing penyebutan di VO** (dari timestamp transkripsi),
+   bukan logika sendiri.
+6. Kualitas detail visual ikut dijaga: ikon jelas terbaca sebagai apa maksudnya, elemen
+   seimbang & tak melayang.
 
 ## Alur (ikut urutannya)
 
@@ -110,13 +124,45 @@ file** tiap sesi — skill ini menyimpan CARA KERJA, bukan aset audio/konten.
    mereka. Solusi: jadikan anak-anak `.hero` alur normal (block/flex flow), hanya
    elemen overlap (badge/coretan/penanda) yang tetap absolute. WAJIB jalankan
    `audit_center.mjs` — deviasi center > 250px = gagal.
-7. **Teks bertimpa padahal terlihat "cuma sedikit".** Jangan andalkan mata; pakai
+7. **Visual tak mengikuti naskah (paling merusak).** Jangan anggap adegan "sudah" hanya
+   karena animasinya jalan. Contoh nyata: grafik korelasi & grafik usia tampil di layar
+   padahal VO tak pernah menyebutnya. Audit wajib-naskah sebelum render: (a) ekstrak
+   transkripsi VO + timestamp per kata (`words.json`), (b) petakan "frasa ini muncul jam
+   berapa di layar?", (c) elemen yang tampil tapi tak ada di naskah → hapus; frasa naskah
+   yang cuma jadi teks diam → tambahkan visual. Urutan visual = urutan penyebutan di VO.
+8. **Render OOM (Mac 8GB).** Chromium menumpuk memori saat mencetak ratusan screenshot →
+   crash di tengah ("Target page closed"). Solusi: restart browser tiap ±400 frame +
+   resume otomatis (lewati frame yang sudah ada & >20KB). Jangan render 2500+ frame dalam
+   satu sesi browser.
+9. **Frame lama tercampur setelah revisi.** Jika hanya sebagian adegan direvisi dan hanya
+   frame rentang itu dihapus, `frames/` jadi campur (mis. 2770 file padahal butuh 2574).
+   Paling aman: hapus seluruh `frames/` sebelum render penuh. Kalau resume, verifikasi
+   jumlah file = TOTAL frame sebelum encode.
+10. **Emoji lolos dari audit DOM.** User minta tanpa emoji — kalau tak dicek otomatis, emoji
+    bisa lolos karena audit bounding-box tak melihat jenis karakter. Sebelum render, jalankan
+    regex Python cari karakter emoji; kalau ketemu → ganti SVG inline. Ikon selalu SVG.
+    `re.findall(r'[\U0001F300-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F]', html)` → wajib 0.
+11. **Ikon & detail visual wajib terbaca pada UKURAN TAMPILNYA — audit DOM & audit layout
+    tak menangkap "ikonnya nggak jelas".** Sebuah SVG bisa punya bentuk yang benar di kode
+    tapi pada ukuran render (mis. ikon 180px dalam diagram) tampak seperti benda lain: ikon
+    otak dengan outline terbuka terbaca sebagai awan/bunga, bukan otak. **Fix:** sebelum
+    render penuh, ekstrak frame dari MP4 lalu perbesar (crop) ikon/diagram kunci dan nilai
+    via vision_analyze — "apakah ini jelas terbaca sebagai X?". Kalau ambigu, sederhanakan
+    bentuk (siluet utuh > outline terbuka) dan perbesar ukurannya. Audit bounding-box hanya
+    cek posisi, bukan keterbacaan bentuk.
+12. **Elemen perbandingan seimbang (bar/kolom A-vs-B) wajib satu grup visual.** Bar yang
+    "melayang" di luar kartu induknya (posisi absolut terpisah) melanggar keseimbangan &
+    rentan menimpa elemen lain saat konten berubah tinggi. Kasus nyata: bar otot atrofi/kuat
+    melayang di luar kartu gym, lalu menabrak kartu. **Fix:** masukkan tiap bar ke DALAM
+    kartu/sel kolomnya sendiri; beda panjang bar itu disengaja (panjang = besaran), tapi
+    lebar kartu & baseline harus sama. Cek via audit_overlap setelah tiap revisi layout.
+13. **Teks bertimpa padahal terlihat "cuma sedikit".** Jangan andalkan mata; pakai
    `audit_overlap.mjs` yang ukur bounding-box nyata. Tanda `?` raksasa, angka besar
    dekoratif, atau judul panjang sering menimpa teks lain tanpa disadari.
-8. **Tema coding/AI terasa mati tanpa animasi ketik.** Teks statis tidak menyampaikan
+14. **Tema coding/AI terasa mati tanpa animasi ketik.** Teks statis tidak menyampaikan
    cara kerja vibe coding. Pakai resep `typing-prompt.js`: prompt diketik per-huruf +
    kursor kedip + app merespons (ubah warna → error → perbaiki → iterasi).
-9. **Logo/ikon dari web**: unduh SVG resmi (CDN jsDelivr / repo GitHub brand), lalu
+15. **Logo/ikon dari web**: unduh SVG resmi (CDN jsDelivr / repo GitHub brand), lalu
    **inline sebagai teks** di HTML — jangan `<img src>` ke file eksternal, agar render
    headless tak bergantung jaringan. Strip animasi SMIL agar output deterministik.
 
