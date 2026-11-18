@@ -9,9 +9,9 @@ description: >-
   minta video motion/explainer/animasi/promo, atau "kayak video sebelumnya" — walau
   tidak menyebut "motion graphic".
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   author: Hasbi workflow (digabung dari bang-motion + motion-format + html-motion-pipeline)
-  updated: "2026-11-17"
+  updated: "2026-11-18" (v1.3: +Gotcha 19-22 dari proyek "AI Bikin Bodoh?")
 ---
 
 # Video Motion — alur baku video bersuara via chat
@@ -283,9 +283,28 @@ Cara ini membuat pergantian adegan jatuh tepat pada jeda napas pembicara.
    ```
    **mean diff < 1.0 = STASIS, tolak** (harusnya puluhan kalau ada gerak nyata).
    Tiap adegan wajib dicek. Fix: beri gerak berkelanjutan yang terlihat — objek melayang/
-   berputar pelan, ikon berdenyut, angka berjalan, kamera push-zoom (scale 1.0→1.04),
-   partikel naik — dan kencangkan amplitudo FX sampai lolos ambang ini, bukan sekadar
-   "ada di kode". Gerak = fungsi murni `t` (Hukum #2), bukan tween sekali-jalan.
+   berputar pelan, ikon berdenyut, angka berjalan, kamera push-zoom, partikel naik —
+   dan kencangkan amplitudo FX sampai lolos ambang ini, bukan sekadar "ada di kode".
+   Gerak = fungsi murni `t` (Hukum #2), bukan tween sekali-jalan. **PILIHAN TEKNIK GERAK
+   — push-zoom per-elemen BERBAHAYA untuk elemen full-width.** Memberi `scale` pada
+   elemen yang lebar ~`width:100%`/center (angka besar 240px, caption selebar 840px,
+   kartu full) MELEBARKANNYA melewati tepi kanvas → audit tepi langsung melaporkan
+   puluhan pelanggaran (`left < 0` / `right > 1080`). Kalau butuh "kamera" untuk melawan
+   stasis, pakai salah satu yang aman: (a) **drift vertikal pada scene-container**
+   (`fromTo(scene,{y:-50},{y:0,duration:adegan},a)`) — translateY tidak pernah melebarkan,
+   tapi tetap gerak kontinu yang kelihatan; (b) bila memang mau zoom, zoom SATU hero
+   berukuran kecil yang punya ruang tepi, bukan elemen selebar kanvas; (c) FX latar
+   (partikel/grid) — tapi amplitudonya HARUS cukup besar untuk lolos ambang mean diff ≥1.0
+   (partikel halus r~1px alpha 0.12 sering tak terukur). Selalu audit tepi SETELAH
+   menambah teknik gerak — teknik gerak adalah penyebab tabrakan-tepi paling umum.
+   **Amplitudo drift harus DIBESAR sampai terukur — drift lembut tetap gagal ambang.**
+   Drift vertikal yang kelihatan "cukup" di preview sering lolos audit mean-diff karena
+   terlalu kecil: `y` dari -12 sampai 0 selama ~20 detik menghasilkan mean diff < 1.0
+   (hampir tak terdeteksi antar-frame). Besarkan amplitudo sampai benar-benar terlihat
+   — drift vertikal -45..-60px per adegan + perbanyak & perbesar partikel latar (jangan
+   cuma dari 70 jadi 110, tapi naikkan radius & alpha-nya juga). Prinsipnya: amplitudo
+   dipilih supaya lolos pengukuran gerak, bukan supaya "terlihat gerak di kode". Selalu
+   re-ukur mean-diff setelah menaikkan amplitudo — jangan anggap aman dari nilai kode.
 
  13. **Satu error JS membunuh SEMUA adegan — gejalanya "semua scene `visibility:hidden`",
   bukan error di layar.** Fungsi `anchor(a,b)` di-build-time menerima STRING selector
@@ -310,6 +329,103 @@ Cara ini membuat pergantian adegan jatuh tepat pada jeda napas pembicara.
   timeline (bisa di-seek). CSS `@keyframes` aman HANYA untuk gerak ambient yang tak
   perlu presisi (glow, partikel latar) DAN bila render meng capture pada waktu nyata
   (bukan seek). Bila ragu, gerak konten = GSAP; gerak latar = CSS boleh.
+
+  15. **Cek tabrakan pada posisi AKHIR meleset untuk animasi ease `back.out`.** Tween
+  `scale:0.4 → 1` dengan `back.out(1.6)` MELAMPAUI target (overshoot ~1.05–1.1) di
+  tengah animasi sebelum menetap ke 1. Audit yang hanya mengukur posisi SETELAH timeline
+  settle ("scale=1, aman") TIDAK melihat puncak overshoot — elemen beranimasi bisa
+  menimpa elemen tetangga persis di momen entry-nya (mis. angka besar melebar saat
+  pop lalu menutupi note di bawahnya). **Fix:** ukur bounding-box pada PUNCAK
+  overshoot, bukan hanya akhir — seek ke titik ketika tween melewati target (sekitar
+  60–75% durasi untuk back.out) dan cek tabrakan di sana. Amplitudo back.out ~1.6–1.8
+  di elemen BESAR (angka hero) adalah kasus paling rawan; kalau ada elemen tetangga
+  dekat tepi bawahnya, kecilkan easing (`back.out(1.2)`) atau turunkan/dorong tetangga.
+
+  16. **Container subtitle `flex-column` MELAYANG naik-turun mengikuti panjang
+  kalimat — biang puluhan tabrakan subtitle di video panjang.** Bila tiap baris
+  subtitle ditumpuk pakai `display:flex; flex-direction:column` di dalam container
+  `bottom`-anchored, penambahan/barunya kalimat menambah tinggi container sehingga
+  SEMUA baris naik-turun dari posisi anchor (bukan bertumpuk di tempat tetap). Baris
+  yang "naik" bisa menginvasi konten adegan di atas zona subtitle → audit melaporkan
+  tabrakan di banyak titik waktu. **Fix:** tiap baris subtitle `position:absolute`,
+  bertumpuk pada ANCHOR BAWAH tetap (mis. semua `.line` di `bottom:0`/`top` tetap di
+  dalam container yang `bottom`-nya terkunci) — jangan biarkan container berubah
+  tinggi. Zona subtitle HARUS statis sepanjang video.
+
+  16b. **Mode subtitle satu-kata: SEMUA `.w` sebagai anak flex di-render sekali = SATU
+  BARIS RAKSASA terpusat → kata ujung melayang jauh keluar kanvas.** Bila tiap kata
+  `.w` dibuat sebagai anak dari `#sub{display:flex;justify-content:center}`, semua
+  kata disejajarkan berdampingan lalu DIPUSATKAN bersama, sehingga kata pertama
+  melayang ke kiri jauh dan terakhir ke kanan jauh (bounding-box `left` negatif
+  ratusan–ribuan piksel). Ini BUKAN soal `transform`/`translate`/`scale` — menambahkan
+  `!important`, memisahkan `translate`/`scale` sebagai properti CSS, atau
+  `overflow:hidden` TIDAK menyelesaikannya. **Fix:** hanya kata aktif yang boleh ikut
+  layout — default `.w{display:none}`, dan `.w.on{display:block}`. Dengan hanya SATU
+  kata dalam alur, flex `justify-content:center` memusatkan tepat satu kata; animasi
+  pop aman pakai `transform:scale()` karena tak ada lagi koordinat absolut yang harus
+  dipertahankan. Tambahan: kata panjang bisa lebih lebar dari kanvas — pakai auto-fit
+  font: kecilkan `font-size` sampai muat. **Ukur lebar teks pakai canvas `measureText()`, BUKAN `getBoundingClientRect()`.** Di dalam container flex dgn `visibility:hidden`/`display:none` (default kata non-aktif), `getBoundingClientRect().width` sering kembali `0` — pengukuran gagal diam-diam, pengecilan font tak pernah terpicu, `overflow:hidden` memotong kata terpanjang, padahal audit layout tetap lulus (hanya melihat bounding-box). Auto-fit berbasis `measureText` (`ctx.font='800 ${fs}px ${fam}'`) tak tergantung reflow; jalankan ulang setelah `document.fonts.ready` (metrik final lebih lebar dari fallback) dan buat render menunggu tanda `__subfit` selesai sebelum merekam frame.
+
+  17. **Audit harus PHASE-AWARE — elemen pada fase waktu berbeda akan dilaporkan
+  "bertabrakan" padahal tak pernah tampil bersamaan.** Bila satu adegan punya dua fase
+  (mis. data/chart tampil dulu, lalu fade-out dan diganti panel twist), audit yang
+  membandingkan bounding-box SEMUA elemen scene akan melaporkan chart×twist sebagai
+  overlap — padahal mereka crossfade (tak pernah opacity tinggi bersama). **Fix di
+  audit:** (a) hitung **opasitas EFEKTIF** = hasil kali opasitas semua leluhur (anak
+  panel punya `opacity:1` tapi parent-nya `opacity:0` saat fade-out → tak boleh
+  dihitung terlihat), buang elemen dengan efektif `< 0.5`; (b) skip pasangan yang
+  KEDUANYA elemen text-flow inline (`position: static/relative/inline`) — itu `<span>`
+  dalam kalimat yang sama, bukan tabrakan. JANGAN skip berdasarkan "punya parent sama"
+  — semua anak `.scene` berbagi parent, itu akan membuang tabrakan sah. Hasil yang
+  benar: tabrakan nyata tetap terdeteksi, false-positive crossfade & inline-span hilang.
+
+  18. **Setiap kalimat naskah wajib punya gambar khusus — jangan "tambah visual di
+  mana-mana" lalu merasa selesai.** Saat user minta "perkaya scene/gambar/diagram biar
+  hidup", jangan hanya menabur elemen dekoratif. **Petakan tiap kalimat/beat VO ke
+  visual yang menyertainya** (tabel: timestamp → kalimat → visual), lalu identifikasi
+  kalimat yang CUMA lewat sebagai subtitle tanpa gambar khusus. Itulah gap yang bikin
+  video terasa "naskah panjang tapi gambar sedikit". Biasanya gap muncul di beat
+  beat naratif penting (twist, kontras, penjelas "kapan A vs kapan B") — beat yang justru
+  paling menentukan argumen. Fix: beri tiap beat gap itu diagram/kartu/perbandingan
+  khusus (panel twist, skala A-vs-B, chip contoh). Ini beda dari audit gerak (#12) —
+  itu soal adegan BERGERAK, ini soal adegan MEMBAWA ISI naskah.
+
+  19. **PRINSIP INDUK — visual melayani naskah & VO, dan makin kaya makin baik.**
+  Kata user Hasbi (proyek "AI Bikin Bodoh?"): "gapapa scene banyak, yang penting mengikuti
+  Voice Over dan naskah. Gambar dan animation mengikuti naskah dan voice over. Lebih
+  hidupkan lagi, perbanyak gambar gapapa." Turunan praktisnya:
+  - Semua yang tampil di layar wajib ada di naskah & diucapkan VO. Elemen menarik yang tak
+    dinarasikan → BUANG sebagus apapun (kasus nyata: grafik korelasi r=−0.68 & grafik usia
+    tampil padahal VO tak pernah menyebutnya).
+  - Sebaliknya tiap kalimat penting wajib punya gambar sendiri yang muncul SAAT frasa itu
+    diucapkan. Kalimat yang cuma jadi teks diam = adegan "sepi" → tambah visual.
+  - Banyak adegan TIDAK masalah; yang penting tiap adegan mengikuti VO & naskah.
+  - Lebih banyak gambar & animasi = lebih baik (lebih hidup). Jangan pelit menambah visual.
+  - Urutan & timing visual = urutan & timestamp penyebutan di VO (dari words.json), bukan
+    logika sendiri. Kasus nyata: istilah "Cognitive Offloading" sempat muncul SETELAH
+    contoh ponsel karena kususun dari logika, padahal VO menyebutnya lebih dulu.
+  - Kualitas detail ikut dijaga: ikon jelas terbaca (otak harus terlihat otak, bukan bunga/
+    awan — pakai 2 belahan + alur tengah + guratan), elemen seimbang & tak melayang.
+
+  20. **Render OOM di Mac 8GB — crash di tengah render panjang.** Chromium menumpuk memori
+  saat mencetak ratusan screenshot → crash "Target page, context or browser has been closed"
+  (kasus nyata: mati di frame 1200 dari 2574). **Fix:** restart browser tiap ±400 frame +
+  resume otomatis (lewati frame yang sudah ada & valid >20KB). Jangan render 2500+ frame
+  dalam satu sesi browser tanpa restart. Kode: loop batch, tiap batch buka browser baru,
+  tutup setelah selesai.
+
+  21. **Frame lama tercampur setelah revisi sebagian.** Hanya menghapus frame rentang yang
+  direvisi (dan lupa sisanya) membuat `frames/` campur — kasus nyata: 2770 file padahal
+  TOTAL 2574, plus file duplikat " 2.png" (sisa copy macOS). **Fix:** paling aman hapus
+  SELURUH `frames/` sebelum render penuh. Kalau resume sebagian, verifikasi jumlah file
+  valid = TOTAL frame SEBELUM encode — ffmpeg `framerate` bisa salah baca bila ada file
+  aneh (meski `f%05d.png` biasanya aman dari file non-konform).
+
+  22. **Emoji lolos dari audit DOM.** User minta tanpa emoji; audit bounding-box TIDAK
+  melihat jenis karakter sehingga emoji bisa lolos diam-diam. **Fix:** sebelum render,
+  jalankan regex Python cari karakter emoji
+  (`re.findall(r'[\U0001F300-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F]', html)`) —
+  hasil wajib 0. Ikon selalu SVG inline (proyek terakhir: 0 emoji, 18 SVG).
 
 ### Cleanup post-delivery (aman)
 
