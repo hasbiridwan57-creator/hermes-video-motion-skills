@@ -55,6 +55,16 @@ pip install faster-whisper   # untuk transkrip per kata
 - `snap.mjs` — potret detik tertentu (`node snap.mjs 1.0 6.5 17.5`) untuk cek visual.
 - `audit2.mjs` — cek SEMUA scene: teks keluar kanvas / masuk zona UI bawah (>1560px) / tabrakan.
 - `audit_s2.mjs` — audit 1 scene (`sc2`) di banyak detik (deteksi reveal terlalu dini, mepet tepi).
+- `audit_overlap.mjs` — **deteksi teks yang BENERAN bertimpa-timpa** (teks×teks, teks×img,
+  teks×tombol). Cerdas membedakan tabrakan nyata vs. yang *by-design*: label di dalam svg
+  container, coretan/strike/garis tembus, subtitle flex berdampingan → tidak dilaporkan.
+  Jalankan `node assets/pipeline/audit_overlap.mjs` → target `TOTAL tumpang tindih: 0`.
+- `audit_center.mjs` — **deteksi konten yang "menggantung di atas"** (2/3 bawah kosong).
+  Ukur bounding konten tiap scene, hitung deviasi dari titik tengah ideal (y≈960 utk 1920px).
+  Deviasi > 250px = ⚠ GANTUNG. Jalankan `node assets/pipeline/audit_center.mjs`.
+- `typing-prompt.js` — **resep animasi "typing prompt"** (inti tema coding/AI): prompt diketik
+  huruf-demi-huruf + kursor berkedip, lalu app merespons (ubah warna → error → perbaiki → iterasi).
+  Contoh penuh: repo video `09-vibe-coding/index.html` adegan SK4.
 - `encode.sh` — ffmpeg → H.264 yuv420p CRF18 + AAC 192k + `+faststart`.
 - `sfx_score.py` — skor SFX prosedural tersinkron ke timing kata.
 - `index.fc-reference.html` — implementasi lengkap (copy & ganti konten).
@@ -90,11 +100,23 @@ file** tiap sesi — skill ini menyimpan CARA KERJA, bukan aset audio/konten.
    (pakai `__`), else 74% frame jadi identik/statis. Cek: `md5 frames/* | uniq -c`.
 4. **Render background di-restart** → pastikan tidak ada `render_frames` lama jalan
    (`pgrep -fl render_frames`) sebelum render baru; hapus `frames/` sebelum mulai.
-6. **Audit DOM bukan pengganti cek visual MP4.** Audit mendeteksi overflow & tabrakan
+5. **Audit DOM bukan pengganti cek visual MP4.** Audit mendeteksi overflow & tabrakan
    bounding-box, tapi TIDAK mendeteksi garis menembus logo / teks menutup kartu —
    itu cuma terlihat di piksel final. Setelah encode, ekstrak frame kunci dari MP4
    (`ffmpeg -ss <t> -i out.mp4 -frames:v 1 f.png`) lalu analisis via vision_analyze.
-7. **Logo/ikon dari web**: unduh SVG resmi (CDN jsDelivr / repo GitHub brand), lalu
+6. **Konten "menggantung di atas" (2/3 bawah kosong).** Ini paling sering lolos karena
+   audit biasa hanya cek overflow, bukan keseimbangan. Penyebab: semua anak `.hero`
+   pakai `position:absolute` → flexbox `justify-content:center` TIDAK berefek pada
+   mereka. Solusi: jadikan anak-anak `.hero` alur normal (block/flex flow), hanya
+   elemen overlap (badge/coretan/penanda) yang tetap absolute. WAJIB jalankan
+   `audit_center.mjs` — deviasi center > 250px = gagal.
+7. **Teks bertimpa padahal terlihat "cuma sedikit".** Jangan andalkan mata; pakai
+   `audit_overlap.mjs` yang ukur bounding-box nyata. Tanda `?` raksasa, angka besar
+   dekoratif, atau judul panjang sering menimpa teks lain tanpa disadari.
+8. **Tema coding/AI terasa mati tanpa animasi ketik.** Teks statis tidak menyampaikan
+   cara kerja vibe coding. Pakai resep `typing-prompt.js`: prompt diketik per-huruf +
+   kursor kedip + app merespons (ubah warna → error → perbaiki → iterasi).
+9. **Logo/ikon dari web**: unduh SVG resmi (CDN jsDelivr / repo GitHub brand), lalu
    **inline sebagai teks** di HTML — jangan `<img src>` ke file eksternal, agar render
    headless tak bergantung jaringan. Strip animasi SMIL agar output deterministik.
 
