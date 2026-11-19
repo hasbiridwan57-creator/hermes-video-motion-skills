@@ -36,6 +36,10 @@ panggil sesuai fase:
 ## MULAI DI SINI — gerbang urutan (jangan lewati)
 
 **Sebelum menulis SATU baris pun** (HTML, naskah, VO) untuk tugas video:
+0. **BACA `USER.md` (folder skill ini) DULU** — profil preferensi & standar Hasbi
+   (latar, palet, positioning, animasi, subtitle, VO, CTA Telegram, yang bikin dia
+   kecewa). Jangan tanya ulang hal yang sudah tertulis di sana. File ini sengaja
+   dipisah dari SOP agar mudah di-update tanpa menyentuh alur kerja.
 1. `skill_view('video-motion')` dulu — lalu sub-skill sesuai fase (tabel di atas).
 2. **RISET DULU kalau topiknya butuh fakta/jurus nyata** (topik edukasi, "cara X",
    perbandingan, berita): kumpulkan poin kunci + hook kuat dari sumber beneran
