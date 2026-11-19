@@ -9,9 +9,9 @@ description: >-
   minta video motion/explainer/animasi/promo, atau "kayak video sebelumnya" — walau
   tidak menyebut "motion graphic".
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
   author: Hasbi workflow (digabung dari bang-motion + motion-format + html-motion-pipeline)
-  updated: "2026-11-19" (v1.4: +SOP Positioning & Urutan Kerja 4 fase dari proyek #11)
+  updated: "2026-11-19" (v1.5: +style-reference/STYLE.md = gaya emas visual + frame acuan dari #11)
 ---
 
 # Video Motion — alur baku video bersuara via chat
@@ -36,10 +36,12 @@ panggil sesuai fase:
 ## MULAI DI SINI — gerbang urutan (jangan lewati)
 
 **Sebelum menulis SATU baris pun** (HTML, naskah, VO) untuk tugas video:
-0. **BACA `USER.md` (folder skill ini) DULU** — profil preferensi & standar Hasbi
-   (latar, palet, positioning, animasi, subtitle, VO, CTA Telegram, yang bikin dia
-   kecewa). Jangan tanya ulang hal yang sudah tertulis di sana. File ini sengaja
-   dipisah dari SOP agar mudah di-update tanpa menyentuh alur kerja.
+0. **BACA `USER.md` DAN `style-reference/STYLE.md` (folder skill ini) DULU** —
+   `USER.md` = preferensi & standar Hasbi (jangan tanya ulang yang sudah tertulis);
+   `STYLE.md` = gaya emas visual + frame acuan. **`vision_analyze` frame di
+   `style-reference/`** sebelum menulis HTML supaya MELIHAT target visualnya, bukan
+   cuma membayangkan dari deskripsi. File ini sengaja dipisah dari SOP agar mudah
+   di-update tanpa menyentuh alur kerja.
 1. `skill_view('video-motion')` dulu — lalu sub-skill sesuai fase (tabel di atas).
 2. **RISET DULU kalau topiknya butuh fakta/jurus nyata** (topik edukasi, "cara X",
    perbandingan, berita): kumpulkan poin kunci + hook kuat dari sumber beneran
@@ -112,9 +114,14 @@ Kerapian = **grid disiplin + tiap adegan satu fokus**. Aturan konkret (bukti dar
 
 ### Fase D — VERIFIKASI SEBELUM RENDER PENUH
 1. `node snap.mjs` → potret 15+ titik kunci → lihat via vision (bukan cuma audit DOM).
+   **Nama file snapshot = DETIK, bukan indeks adegan** (`snap_00003` = t≈0.3 dtk, BUKAN
+   adegan 3). Sebelum menilai lewat vision, petakan dulu titik audit ke nomor adegan
+   yang benar — cek frame untuk "adegan heksagon" di frame hook akan lolos kosong dan
+   membuatmu salah yakin bahwa adegan itu sudah benar.
 2. **Matikan rAF di snap** (sama seperti render) → snapshot baru deterministik.
 3. Cek per adegan: teks kepotong? overlap? ruang kosong berlebih? ikon terbaca?
 4. Baru render penuh (`--sampai 3` dulu uji, lalu penuh + resume anti-OOM).
+5. **Jebakan re-tema (gelap↔terang): latar bisa masih gelap walau warna utama sudah diganti.** Bila mengubah tema video jadi terang/ gelap setelah dirender, penggantian warna GLOBAL (background body, teks) TIDAK mengubah gradien latar PER-ADEGAN yang ditulis sendiri (mis. `#sc7 .bg{background:linear-gradient(180deg,#0a2a3a…)}`) dan shadow gelap di elemen CTA — adegan itu tetap gelap di MP4 walau "sudah kubalik semua". **Fix:** setelah re-tema, grep html untuk pola gradien & warna latar per-adegan (`grep -nE "gradient|#0[0-9a-f]{5}" index.html`) dan pastikan tiap adegan ikut berubah. **Verifikasi objektif via piksel, bukan mata:** ekstrak frame tiap adegan dari MP4 lalu ukur kecerahan area latar (`np.array(Image.open(f).convert('RGB'))[:80,:80].mean()`; >180 = terang, <100 = masih gelap). Nilai per adegan, bukan satu frame. Ini lebih andal daripada `vision_analyze` yang sering timeout/menolak memuat gambar di sesi desktop.
 
 **Antisipasi kekompakan lintas-sesi:** metode ini bekerja karena (a) VO diproses
 SEBELUM visual, (b) positioning dari grid, bukan perasaan, (c) deterministik +
@@ -277,8 +284,11 @@ Cara ini membuat pergantian adegan jatuh tepat pada jeda napas pembicara.
 
 ### Gotchas render & bridge
 
-1. **Render foreground > 420 dtk timeout** → selalu `background=true` +
-   `notify_on_complete`, lalu poll jumlah frame di `frames/`.
+1. **Selalu render via `background=true` + `notify_on_complete`, bukan foreground.**
+   Render video penuh (2000+ frame) SELALU melebihi batas foreground → perintah
+   foreground mati kena timeout dan MENYISAKAN proses Chromium yatim yang terus makan
+   memori. Jangan pernah panggil `node render_frames.mjs` di foreground untuk render
+   penuh; jalankan background lalu pantau jumlah frame di `frames/` hingga `DONE`.
 2. **Hapus `frames/` sebelum render baru** — resume mencampur frame basi.
 3. **Logo asli inline lokal**, bukan CDN — render headless tak boleh tergantung
    jaringan. Unduh PNG/SVG resmi ke `assets/logos/` lalu pakai path relatif.
@@ -492,7 +502,15 @@ Cara ini membuat pergantian adegan jatuh tepat pada jeda napas pembicara.
   `DUR=5 RESTART=50 node render_frames.mjs` — bila 150 frame lolos tanpa crash, baru jalankan penuh.
   Resume membuat crash bukan bencana: jalankan ulang perintah yang sama sampai `DONE`, tiap frame
   valid >20KB dilewati. Jangan salah baca jumlah file: resume bisa menyisakan file ekstra > TOTAL —
-  encoder hanya pakai `f00000..f{TOTAL-1}`, sisanya diabaikan.
+  encoder hanya pakai `f00000..f{TOTAL-1}`, sisanya diabaikan. **Bila crash tetap berulang walau
+  batch & heap sudah diturunkan, jangan menaikkan interval terus — bungkus render dalam loop shell
+  yang otomatis restart & resume tiap crash:** `for i in 1 2 3 4 5 6; do node render_frames.mjs >>
+  render.log 2>&1; N=$(ls frames/|wc -l); [ "$N" -ge $TOTAL ] && break; sleep 2; done` (jalankan
+  via background=true). Tiap crash cuma membuang satu batch, sisanya lanjut dari frame terakhir —
+  lebih andal daripada mengandalkan satu proses panjang. **Revisi sebagian adegan = hapus HANYA
+  frame rentang itu lalu resume** (hemat waktu, tak perlu render ulang seluruh video): hitung frame
+  awal adegan = `t0*30`, hapus `frames/f*.png` dengan nomor ≥ itu, jalankan ulang render — resume
+  melewati semua frame valid sebelumnya dan hanya merender adegan yang diubah.
 
   21. **Frame lama tercampur setelah revisi sebagian.** Hanya menghapus frame rentang yang
   direvisi (dan lupa sisanya) membuat `frames/` campur — kasus nyata: 2770 file padahal
