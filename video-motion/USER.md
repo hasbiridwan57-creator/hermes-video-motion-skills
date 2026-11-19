@@ -16,9 +16,13 @@
 
 ## 2. Latar & palet
 
-- **Default latar: GELAP futuristik** (hampir hitam + glow neon hijau `#23FFA0`) untuk
-  topik teknologi/AI/kode. BUKAN gelap PPT — pakai gradien radial + partikel ambient.
-- Latar TERANG krem (`#F6F4EF`) dipakai kalau Hasbi minta eksplisit (nada dokumenter).
+- **Default latar: TERANG** — krem hangat `#F6F4EF` (nada bersih, dokumenter, nyaman
+  dibaca di HP). Ini pilihan baku Hasbi untuk hampir semua video.
+- Latar GELAP futuristik (hampir hitam + glow neon hijau `#23FFA0`) HANYA kalau Hasbi
+  minta eksplisit (mis. topik kode/hacker yang memang minta suasana gelap).
+- Latar terang TETAP butuh gerak ambient (grain halus, partikel lembut, blob warna,
+  dot-grid samar) — jangan flat satu warna, biar tidak jadi PPT statis.
+- Teks utama gelap (`#1a1a1a`/`#0f172a`) di atas terang; aksen dari satu warna tema.
 - Aksen merah `#FF5470` untuk kontras negatif (coretan, "gak ada", larangan).
 - Ikon = **SVG inline** selalu. **0 emoji** di seluruh video (audit regex wajib 0).
 
