@@ -9,9 +9,9 @@ description: >-
   minta video motion/explainer/animasi/promo, atau "kayak video sebelumnya" — walau
   tidak menyebut "motion graphic".
 metadata:
-  version: "1.5.0"
+  version: "1.5.1"
   author: Hasbi workflow (digabung dari bang-motion + motion-format + html-motion-pipeline)
-  updated: "2026-11-19" (v1.5: +style-reference/STYLE.md = gaya emas visual + frame acuan dari #11)
+  updated: "2026-11-19" (v1.5.1: cleanup = cadangkan MP4 final SEBELUM hapus folder)
 ---
 
 # Video Motion — alur baku video bersuara via chat
@@ -533,9 +533,14 @@ Cara ini membuat pergantian adegan jatuh tepat pada jeda napas pembicara.
 rm -rf frames shots frames_dbg out
 rm -f slow.wav "index 2.html" _chunks_new.txt preview_*.png
 ```
+**Cadangkan MP4 final ke LUAR folder proyek SEBELUM membersihkan apa pun** (mis.
+`~/Videos/`): folder proyek sering diminta dihapus seluruhnya begitu video terkirim,
+dan MP4 yang terhapus bersamanya tak bisa dipulihkan tanpa me-render ulang seluruh
+frame (belasan menit + rawan crash di Mac 8GB). Ini penting banget bila video itu
+justru akan jadi acuan gaya — potret frame dari MP4 yang masih ada, jangan dari memori.
 **JANGAN dihapus** (dipakai video berikutnya, hemat install ulang):
 `index.html` (template), `render.mjs`/`snap.mjs`/`transcribe.py` (pipeline),
-`gaya.md`/`vo_words.json`, `assets/`, `node_modules/`, `.venv/`.
+`gaya.md`/`vo_words.json`, `assets/` (termasuk logo grup), `node_modules/`, `.venv/`.
 
 ## Referensi proyek teruji
 Video "Apa itu Function Calling" (9:16, 44.6 dtk) = contoh pipeline flat-motion 2D.
