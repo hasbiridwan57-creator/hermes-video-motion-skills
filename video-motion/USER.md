@@ -72,8 +72,15 @@
   pengganti generik.)
 - Logo dipakai di adegan CTA terakhir: logo asli + nama grup + deskripsi singkat +
   tombol **"LINK DI BIO"**.
-- Logo ini PNG RGBA (sudah ada transparan) — pasang langsung, ukur ±200–260px,
-  jangan dibulatkan paksa (sudah punya bentuk sendiri).
+- Logo ini PNG RGBA (sudah ada transparan) — tampilkan **BULAT** (clip lingkaran),
+  bukan kotak/potongan persegi. Cara persisnya:
+  ```css
+  .tgmark img { width:260px; height:260px; object-fit:contain;
+    clip-path:circle(50% at 50% 50%);
+    filter:drop-shadow(0 8px 26px rgba(0,0,0,.16)); }
+  ```
+  → logo tampil sebagai lingkaran rapi, bukan persegi. Verifikasi: pojok luar lingkaran
+  = latar (terang), tengah = logo.
 
 ## 8. Yang membuat Hasbi kecewa (HINDARI)
 
