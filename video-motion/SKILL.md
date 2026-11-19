@@ -9,9 +9,9 @@ description: >-
   minta video motion/explainer/animasi/promo, atau "kayak video sebelumnya" — walau
   tidak menyebut "motion graphic".
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   author: Hasbi workflow (digabung dari bang-motion + motion-format + html-motion-pipeline)
-  updated: "2026-11-18" (v1.3: +Gotcha 19-22 dari proyek "AI Bikin Bodoh?")
+  updated: "2026-11-19" (v1.4: +SOP Positioning & Urutan Kerja 4 fase dari proyek #11)
 ---
 
 # Video Motion — alur baku video bersuara via chat
@@ -56,6 +56,67 @@ menghasilkan **deck slide** — tiap adegan jadi `<section>` yang di-fade in-out
 melanggar Hukum #1 dan butuh render penuh (~9 menit) sebelum kelihatan "ancur".
 Baca bang-motion DULU; mulai dari `index.fc-reference.html`, jangan tulis dari nol.
 
+## SOP POSITIONING & URUTAN KERJA (standar kekompakan antar-sesi)
+
+Sumber: proyek **#11 "Perusahaan Tanpa Karyawan"** (7 adegan, 55.8 dtk) yang selesai
+**tanpa satu pun revisi layout**. Inilah metode tepat yang menghasilkan rapi di percobaan
+pertama. **Ikuti urutannya persis** — melompat satu langkah = ulang seluruh render.
+
+### Fase A — PERSIAPAN (sebelum sentuh HTML)
+1. **VO dulu, bukan visual.** Begitu user kirim file VO → langsung proses:
+   ```
+   ffmpeg -i vo_raw.mp3 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 16000 -ac 1 vo_norm.wav
+   ```
+   (loudnorm WAJIB — mencegah halusinasi Whisper).
+2. **Transkripsi per-kata** (model `small`, `language="id"`, `word_timestamps=True`,
+   `vad_filter=True`, `temperature=0`, `beam_size=5`, int8). Decode manual via
+   `soundfile`→numpy (hindari bug `av`). Hasil: `vo_words.json` = sumber kebenaran
+   SEMUA timing.
+3. **Petakan batas adegan dari timestamp**, bukan dari naskah. Contoh nyata:
+   VO #11 jatuh di 8 adegan → `0/7.7/16.3/22.4/29.1/36.4/41.6`. Setiap adegan mulai =
+   `start` kata pertama kalimat pembukanya. **Visual muncul PERSIS saat frasa diucapkan.**
+
+### Fase B — POSITIONING (kunci kerapian)
+Kerapian = **grid disiplin + tiap adegan satu fokus**. Aturan konkret (bukti dari #11):
+- **Satu zona vertikal per peran.** Di 1080×1920: kicker/judul band atas (y≈300),
+  visual utama band tengah (y 560–1250), caption penutup band bawah scene (y≈1330),
+  subtitle TETAP di y≈1460. Jangan campur peran lintas band.
+- **Node/kolom simetris** pakai kiri–tengah–kanan: `left:250/540/830px` (pusat 540).
+  Tengah boleh `top` sedikit lebih tinggi dari pinggir biar komposisi hidup, TAPI
+  jarak horizontal ketiganya sama.
+- **Kartu seimbang** (perbandingan A-vs-B): `width` & `top` & padding SAMA untuk
+  kedua kartu; yang membedakan cuma isinya. Jangan satu gemuk satu kurus.
+- **Subtitle di luar `#world`** (anak `#stage`, bukan `#world`) supaya tak ikut kamera.
+- **Ukur jangan kira.** Setiap teks wajib lolos `audit_overlap` (0 tabrakan) &
+  `audit_center` (deviasi center <250px). Bounding-box, bukan mata.
+
+### Fase C — ANIMASI (kunci "hidup tapi tenang")
+- **Deterministik total.** Semua = fungsi murni `t`. Nol `Math.random()`.
+  Ambient (matrix rain, partikel) pakai **seeded RNG** (`mulberry32(seed)`) biar
+  tiap render identik.
+- **rAF = musuh render.** Matikan `window.requestAnimationFrame` lewat
+  `page.evaluateOnNewDocument(()=>{window.requestAnimationFrame=()=>0;})` SEBELUM
+  `goto` — kalau tidak, autoplay loop menimpa `__seek` dan frame jadi acak.
+  (Pola: rAF HANYA untuk preview browser, bukan render headless.)
+- **Sinkron frasa.** Setiap beat visual pakai timestamp kata dari `vo_words.json`
+  sebagai anchor tween (contoh: node RISET muncul di `start` kata "riset").
+- **Gerak berkelanjutan**: drift kamera vertikal halus per adegan (`y:-55→0`),
+  denyut ring (`scale 1↔1.06 yoyo`), counter angka naik, hujan koin. Semua lolos
+  ambang mean-diff gerak (Gotcha #12).
+- **Hook = set, bukan fade-in.** Frame 0 = thumbnail TikTok → teks hook SUDAH penuh
+  di t=0 (`tl.set`, bukan `fromTo` opacity 0). Jangan biarkan frame pertama kosong.
+
+### Fase D — VERIFIKASI SEBELUM RENDER PENUH
+1. `node snap.mjs` → potret 15+ titik kunci → lihat via vision (bukan cuma audit DOM).
+2. **Matikan rAF di snap** (sama seperti render) → snapshot baru deterministik.
+3. Cek per adegan: teks kepotong? overlap? ruang kosong berlebih? ikon terbaca?
+4. Baru render penuh (`--sampai 3` dulu uji, lalu penuh + resume anti-OOM).
+
+**Antisipasi kekompakan lintas-sesi:** metode ini bekerja karena (a) VO diproses
+SEBELUM visual, (b) positioning dari grid, bukan perasaan, (c) deterministik +
+rAF mati. Sesi mana pun yang mengikuti Fase A→D persis akan menghasilkan kerapian
+setara proyek #11.
+
 ## Alur baku (adaptif — pakai bagian yang relevan)
 
 1. **Brief 5 hal** (motion-format): apa, topik+bahan, untuk siapa, durasi, rasio+subtitle.
@@ -65,6 +126,13 @@ Baca bang-motion DULU; mulai dari `index.fc-reference.html`, jangan tulis dari n
    **Latar tidak default gelap.** Gaya dari tema/brand, bukan dari starter/referensi.
 3. **Gambar uji adegan 1** (±8 dtk, mutu final) → potret → tampilkan → user setuju.
 4. **Naskah per adegan** → `naskah.md`. Atau bila user rekam sendiri: minta file VO.
+   **Format naskah saat ditunjukkan di chat = PARAGRAF, bukan tabel.** User Hasbi
+   ingin membaca naskah sebagai alur cerita mengalir (prosa per paragraf), bukan tabel
+   `# | visual | VO | detik`. Tulis tabel dulu di `naskah.md` sebagai blueprint internal
+   (untuk memetakan beat→visual, lihat Gotcha #18), tapi yang DITAMPILKAN ke user untuk
+   ACC = versi paragraf. **Setiap naskah video Hasbi WAJIB ditutup promosi grup Telegram**
+   (grup `diskusitentangai`, CTA di teks VO + logo grup di end screen) — taruh CTA-nya di
+   dalam naskah itu sendiri sebagai kalimat penutup VO, bukan cuma visual akhir.
 5. **VO + timing**
    - User rekam sendiri (ElevenLabs dsb.): proses filenya. **Transkripsi + timestamp per
      kata** via faster-whisper (pipeline). Terlalu cepat → tawarkan varian tempo
@@ -407,12 +475,20 @@ Cara ini membuat pergantian adegan jatuh tepat pada jeda napas pembicara.
   - Kualitas detail ikut dijaga: ikon jelas terbaca (otak harus terlihat otak, bukan bunga/
     awan — pakai 2 belahan + alur tengah + guratan), elemen seimbang & tak melayang.
 
-  20. **Render OOM di Mac 8GB — crash di tengah render panjang.** Chromium menumpuk memori
+  20. **Render OOM di Mac 8GB — crash berulang di tengah render panjang.** Chromium menumpuk memori
   saat mencetak ratusan screenshot → crash "Target page, context or browser has been closed"
-  (kasus nyata: mati di frame 1200 dari 2574). **Fix:** restart browser tiap ±400 frame +
-  resume otomatis (lewati frame yang sudah ada & valid >20KB). Jangan render 2500+ frame
-  dalam satu sesi browser tanpa restart. Kode: loop batch, tiap batch buka browser baru,
-  tutup setelah selesai.
+  (`window.__seek is not a function` pada log adalah GEJALA yang sama — tab sudah mati). **Makin
+  berat FX latar (blur besar, `mix-blend-mode:screen`, puluhan partikel di 1080×1920), makin cepat
+  memori penuh — interval restart 400 frame TIDAK cukup untuk efek laut berat (crash di 851 lalu
+  2347); turunkan ke ±80 frame.** **Fix wajib:** loop batch + restart browser tiap N frame (mulai
+  80 untuk FX berat, naikkan hanya bila terbukti stabil) + **resume otomatis** (lewati frame yang
+  sudah ada) supaya tiap crash tak membuang frame sebelumnya. Tambah flag hemat memori saat launch:
+  `--disable-gpu --disable-software-rasterizer --disable-dev-shm-usage --js-flags=--max-old-space-size=3072`.
+  Jangan render 2500+ frame dalam satu sesi browser tanpa restart. **Uji dulu sebelum render penuh:**
+  `DUR=5 RESTART=50 node render_frames.mjs` — bila 150 frame lolos tanpa crash, baru jalankan penuh.
+  Resume membuat crash bukan bencana: jalankan ulang perintah yang sama sampai `DONE`, tiap frame
+  valid >20KB dilewati. Jangan salah baca jumlah file: resume bisa menyisakan file ekstra > TOTAL —
+  encoder hanya pakai `f00000..f{TOTAL-1}`, sisanya diabaikan.
 
   21. **Frame lama tercampur setelah revisi sebagian.** Hanya menghapus frame rentang yang
   direvisi (dan lupa sisanya) membuat `frames/` campur — kasus nyata: 2770 file padahal
@@ -426,6 +502,8 @@ Cara ini membuat pergantian adegan jatuh tepat pada jeda napas pembicara.
   jalankan regex Python cari karakter emoji
   (`re.findall(r'[\U0001F300-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F]', html)`) —
   hasil wajib 0. Ikon selalu SVG inline (proyek terakhir: 0 emoji, 18 SVG).
+
+  23. **Render yang hanya memanggil SUBTITLE melempar SEMUA animasi kontinu — adegan mati padahal kodenya punya gerak.** Kalau `render.mjs` hanya memanggil `window.__updateSub(t)` per frame dan TIDAK memanggil fungsi update-alive (yang menggerakkan partikel/marquee/breathing/push-zoom), seluruh gerak berkelanjutan TIDAK ikut terekam — output final jadi diam walaupun preview browser hidup. Ini beda dari Gotcha #12 (di sana gerak memang kecil/absen di kode) dan #13 (error JS mematikan semua adegan); di sini gerak ADA di kode tapi renderer tak pernah memicunya. **Fix:** pastikan loop render memanggil SEMUA updater per frame, bukan hanya subtitle: `window.__tl.time(t); window.__updateSub(t); window.__updateAlive && window.__updateAlive(t)`. **Cegah di awal:** sesudah menulis fungsi `__updateAlive`, grep `render.mjs` untuk `__updateAlive` — kalau tak terpanggil di loop snapshot, tambahkan sebelum render penuh. Karena mean-diff audit dijalankan pada MP4 final, bug ini tetap tertangkap oleh audit gerak — jadi setiap kali audit melaporkan adegan stasis, cek DULU apakah renderer memanggil updater animasi, sebelum mengira amplitudonya kecil.
 
 ### Cleanup post-delivery (aman)
 
