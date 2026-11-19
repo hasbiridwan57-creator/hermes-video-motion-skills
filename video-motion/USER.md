@@ -61,8 +61,29 @@
   deskripsi singkat · tombol **"LINK DI BIO"** berdenyut.
 - Kalau ada logo grup asli dari user, pakai itu (logo di lingkaran, bukan kotak).
 
+## 7b. CTA penutup — logo grup WAJIB pakai logo ASLI
+
+- Setiap akhir video promosikan **grup Telegram "Diskusi Tentang AI"**.
+- **Logo = gambar ASLI yang Hasbi berikan**, BUKAN ikon Telegram generik / emoji /
+  gambar sendiri. Salinan stabil ada di:
+  `skills/video-motion/assets/telegram_group_logo.png` (640×640, PNG transparan).
+  (Jika file hilang → **minta Hasbi kirim ulang logo** sebelum render; jangan pakai
+  pengganti generik.)
+- Logo dipakai di adegan CTA terakhir: logo asli + nama grup + deskripsi singkat +
+  tombol **"LINK DI BIO"**.
+- Logo ini PNG RGBA (sudah ada transparan) — pasang langsung, ukur ±200–260px,
+  jangan dibulatkan paksa (sudah punya bentuk sendiri).
+
 ## 8. Yang membuat Hasbi kecewa (HINDARI)
 
+- **Narasi yang tidak divisualkan** — setiap kalimat VO wajib punya gambar/animasi
+  sendiri yang muncul saat frasa itu diucapkan. Kalimat yang cuma jadi teks diam =
+  adegan "sepi" → TAMBAH visual (ini keluhan #1 Hasbi).
+- **Gambar/elemen bertumpuk (tumpang tindih)** — layar reels/TikTok harus bersih;
+  tidak boleh ada dua elemen saling menimpa. Lolos `audit_overlap` (0 tabrakan).
+- **Pelit scene, gambar, dan animasi** — Hasbi MAU banyak adegan, banyak gambar,
+  banyak gerak. Layar harus "hidup" sepanjang video, tanpa ruang kosong, tanpa
+  yang diam. Lebih ramai visual = lebih baik (asal tetap rapi & tak tumpang tindih).
 - Adegan kosong / cuma subtitle / "kayak PPT" (section di-fade).
 - Visual yang tidak dinarasikan VO (mengarang angka/grafik sendiri).
 - Layout bertumpuk, teks mepet tepi, kartu tak seimbang, ikon emoji.
