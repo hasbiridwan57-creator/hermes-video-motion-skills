@@ -57,9 +57,10 @@
 ## 7. CTA penutup (hampir selalu)
 
 - Promosikan **grup Telegram "Diskusi Tentang AI"** di adegan terakhir.
-- Elemen: logo Telegram (SVG asli) · nama grup ("Diskusi **Tentang AI**") ·
-  deskripsi singkat · tombol **"LINK DI BIO"** berdenyut.
-- Kalau ada logo grup asli dari user, pakai itu (logo di lingkaran, bukan kotak).
+- Elemen: logo grup · nama grup ("Diskusi **Tentang AI**") · deskripsi singkat ·
+  tombol **"LINK DI BIO"** berdenyut.
+- **Logo = gambar ASLI dari Hasbi** (bukan ikon generik / emoji / gambar sendiri).
+  Detail lengkap + lokasi file di bagian 7b di bawah.
 
 ## 7b. CTA penutup — logo grup WAJIB pakai logo ASLI
 
